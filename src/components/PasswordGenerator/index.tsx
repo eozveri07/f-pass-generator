@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ const PasswordGenerator = () => {
   );
   const { toast } = useToast();
 
-  const generatePassword = () => {
+  const generatePassword = useCallback(() => {
     let charset = "";
     let newPassword = "";
 
@@ -48,7 +48,7 @@ const PasswordGenerator = () => {
       newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
     }
     setPassword(newPassword);
-  };
+  }, [mode, uppercase, lowercase, numbers, symbols, length]);
 
   useEffect(() => {
     generatePassword();
