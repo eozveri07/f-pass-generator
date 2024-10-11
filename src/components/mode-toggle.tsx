@@ -63,39 +63,39 @@ export function ThemeToggle() {
 				whileHover={{ scale: 1.05 }}
 				whileTap={{ scale: 0.9 }}
 				className={cn(
-					"h-6 w-10 flex items-center bg-zinc-0 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/30 dark:ring-white/10 rounded-full shadow-inner dark:shadow-black/10 relative"
+					"h-10 w-20 flex items-center bg-zinc-0 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/30 dark:ring-white/10 rounded-full shadow-inner dark:shadow-black/10 relative"
 				)}
 			>
 				<motion.div
 					animate={{
-						x: theme === "light" ? 4 : theme === "system" ? 12 : 20,
+						x: theme === "light" ? 4 : theme === "system" ? 24 : 40,
 						transition: { duration: 0.1, easings: ["easeInOut"] },
 					}}
-					className="rounded-full size-4 relative"
+					className="rounded-full size-8 relative"
 				>
 					<motion.div
-						className="size-4 absolute top-0 left-0"
+						className="size-8 absolute top-0 left-0"
 						variants={iconVariants}
 						initial="hidden"
 						animate={controlsSun}
 					>
-						<SunMedium className="size-4" />
+						<SunMedium className="size-8" />
 					</motion.div>
 					<motion.div
-						className="size-4 absolute top-0 left-0"
+						className="size-8 absolute top-0 left-0"
 						variants={iconVariants}
 						initial="hidden"
 						animate={controlsContrast}
 					>
-						<SunMoon className="size-4 dark:rotate-180" />
+						<SunMoon className="size-8 dark:rotate-180" />
 					</motion.div>
 					<motion.div
-						className="size-4 absolute top-0 left-0"
+						className="size-8 absolute top-0 left-0"
 						variants={iconVariants}
 						initial="hidden"
 						animate={controlsMoon}
 					>
-						<Moon className="size-4" />
+						<Moon className="size-8" />
 					</motion.div>
 				</motion.div>
 			</motion.div>
