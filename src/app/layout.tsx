@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TailwindIndicator } from "@/components/tailwind-indicator"
+import { Toaster } from "@/components/ui/toaster"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,6 +38,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster />
+
           <TailwindIndicator />
         </ThemeProvider>
       </body>
