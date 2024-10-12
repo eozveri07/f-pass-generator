@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Disallow: /admin/
+Disallow: /*.tsx$
+Disallow: /*.ts$
+Disallow: /*.json$
+Disallow: /*.env$
+Allow: /
+
+Sitemap: https://pass.fenrio.com/sitemap.xml
