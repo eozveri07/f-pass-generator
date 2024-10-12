@@ -68,7 +68,7 @@ const PasswordGenerator = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-3xl mx-auto p-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl"
+      className="max-w-3xl mx-auto p-8 sm:px-8 px-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl"
     >
       <motion.h2
         initial={{ opacity: 0, y: -20 }}
