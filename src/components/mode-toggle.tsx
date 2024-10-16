@@ -56,7 +56,7 @@ export function ThemeToggle() {
 
 	return (
 		<button
-			className="cursor-pointer"
+			className="cursor-pointer"  aria-label="Toggle Menu"
 			onClick={() => setTheme(nextTheme)}
 		>
 			<motion.div

@@ -91,11 +91,21 @@ const PasswordGenerator = () => {
           className="w-full mb-4 text-2xl font-mono py-6 text-center"
         />
         <div className="flex justify-center space-x-4">
-          <Button onClick={generatePassword} size="lg" className="w-40">
+          <Button
+            onClick={generatePassword}
+            size="lg"
+            className="w-40"
+            aria-label="Regenerate Password"
+          >
             <RefreshCw className="mr-2 h-5 w-5" />
             Regenerate
           </Button>
-          <Button onClick={copyToClipboard} size="lg" className="w-40">
+          <Button
+            onClick={copyToClipboard}
+            size="lg"
+            className="w-40"
+            aria-label="Copy Password"
+          >
             <Copy className="mr-2 h-5 w-5" />
             Copy
           </Button>
@@ -118,6 +128,7 @@ const PasswordGenerator = () => {
           min={8}
           step={1}
           className="w-full"
+          aria-label="Password Length Slider"
         />
       </motion.div>
 
@@ -135,15 +146,27 @@ const PasswordGenerator = () => {
           className="flex flex-col space-y-2"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="all" id="all" />
+            <RadioGroupItem
+              value="all"
+              id="all"
+              aria-label="Use all characters for password"
+            />
             <Label htmlFor="all">All Characters</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="easy-to-say" id="easy-to-say" />
+            <RadioGroupItem
+              value="easy-to-say"
+              id="easy-to-say"
+              aria-label="Use easy to say characters for password"
+            />
             <Label htmlFor="easy-to-say">Easy to say</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="easy-to-read" id="easy-to-read" />
+            <RadioGroupItem
+              value="easy-to-read"
+              id="easy-to-read"
+              aria-label="Use easy to read characters for password"
+            />
             <Label htmlFor="easy-to-read">Easy to read</Label>
           </div>
         </RadioGroup>
@@ -203,6 +226,8 @@ const CheckboxItem: React.FC<CheckboxItemProps> = ({
       onCheckedChange={onCheckedChange}
       disabled={disabled}
       className="h-5 w-5"
+      aria-checked={checked}
+      aria-label={`${label} checkbox`}
     />
     <label
       htmlFor={id}
