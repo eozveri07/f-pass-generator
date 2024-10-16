@@ -30,6 +30,7 @@ const ThemeAwareLogo = () => {
       width={120}
       height={40}
       priority
+      decoding="async"
     />
   );
 };
