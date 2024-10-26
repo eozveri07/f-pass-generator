@@ -18,9 +18,9 @@ const ThemeAwareLogo = () => {
 
   const logoSrc = (() => {
     if (theme === 'system') {
-      return systemTheme === 'dark' ? "/images/logo-dark.png" : "/images/logo-light.png";
+      return systemTheme === 'dark' ? "/images/logo-dark.svg" : "/images/logo-light.svg";
     }
-    return theme === 'dark' ? "/images/logo-dark.png" : "/images/logo-light.png";
+    return theme === 'dark' ? "/images/logo-dark.svg" : "/images/logo-light.svg";
   })();
 
   return (
