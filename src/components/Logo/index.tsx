@@ -1,8 +1,7 @@
-"use client";
-
 import { useTheme } from 'next-themes';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import LightLogo from '/public/images/logo-light.svg';
+import DarkLogo from '/public/images/logo-dark.svg';
 
 const ThemeAwareLogo = () => {
   const [mounted, setMounted] = useState(false);
@@ -13,24 +12,22 @@ const ThemeAwareLogo = () => {
   }, []);
 
   if (!mounted) {
-    return null;
+    return (
+      <div className="w-[120px] h-[40px] bg-gray-200 animate-pulse" />
+    );
   }
 
-  const logoSrc = (() => {
+  const Logo = (() => {
     if (theme === 'system') {
-      return systemTheme === 'dark' ? "/images/logo-dark.svg" : "/images/logo-light.svg";
+      return systemTheme === 'dark' ? DarkLogo : LightLogo;
     }
-    return theme === 'dark' ? "/images/logo-dark.svg" : "/images/logo-light.svg";
+    return theme === 'dark' ? DarkLogo : LightLogo;
   })();
 
   return (
-    <Image
-      src={logoSrc}
+    <Logo 
+      className="w-[120px] h-[40px] transform-gpu" 
       alt="Fenrio Logo"
-      width={120}
-      height={40}
-      priority
-      decoding="async"
     />
   );
 };
