@@ -17,22 +17,27 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Fenrio Password Generator",
-  description: "Easily generate strong and secure passwords for all your needs with us.",
+  title:
+    "Secure Password Generator - Create Strong Passwords Instantly | Fenrio",
+
+  description:
+    "Generate secure, unique, and unbreakable passwords effortlessly with Fenrio's Password Generator. Safeguard your accounts and enhance online security today.",
   icons: {
     icon: "/images/favicon.ico",
   },
   openGraph: {
-    title: "Fenrio Password Generator",
-    description: "Easily generate strong and secure passwords for all your needs with us.",
-    url: "https://pass.fenrio.com", 
+    title:
+      "Secure Password Generator - Create Strong Passwords Instantly | Fenrio",
+    description:
+      "Generate secure, unique, and unbreakable passwords effortlessly with Fenrio's Password Generator. Safeguard your accounts and enhance online security today.",
+    url: "https://pass.fenrio.com",
     siteName: "Fenrio",
     images: [
       {
-        url: "https://fenrio.com/images/logo.png", 
+        url: "https://fenrio.com/images/logo.png",
         width: 1200,
         height: 630,
-        alt: "Fenrio Password Generator",
+        alt: "Secure Password Generator - Create Strong Passwords Instantly | Fenrio",
       },
     ],
     locale: "en_US",
@@ -47,8 +52,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-      </head>
+      <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
