@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { SpotlightPreview } from "@/components/Spotlight";
+import NavButton from "@/components/NavButton";
+import { ArrowLeft } from "lucide-react";
 
 export default function SignIn() {
   const currentYear = new Date().getFullYear();
@@ -40,7 +42,10 @@ export default function SignIn() {
 
         <header className="relative w-full flex justify-between items-center mb-12">
           <ThemeAwareLogo />
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <NavButton icon={ArrowLeft} title="Back to Generator" href="/" />
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="relative flex-grow flex items-center justify-center w-full max-w-md mx-auto">
@@ -61,7 +66,7 @@ export default function SignIn() {
               </motion.h2>
               <Button
                 className="w-full py-6 text-lg"
-                onClick={() => signIn("google", { callbackUrl: "/" })}
+                onClick={() => signIn("google", { callbackUrl: "/admin" })}
               >
                 <svg
                   className="mr-2 h-5 w-5"
