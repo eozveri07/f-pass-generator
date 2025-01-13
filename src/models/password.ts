@@ -1,26 +1,37 @@
 import mongoose from 'mongoose'
 
+export enum PriorityLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high'
+}
+
 const passwordSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },
   title: {
     type: String,
-    required: true,
+    required: true
   },
-  username: String, 
+  username: String,
   password: {
     type: String,
     required: true
   },
-  url: String, 
-  notes: String, 
-  lastCopied: Date, 
+  recoveryData: String,
+  url: String,
+  notes: String,
+  lastCopied: Date,
+  priorityLevel: {
+    type: String,
+    enum: Object.values(PriorityLevel),
+    default: PriorityLevel.LOW
+  }
 }, {
-  timestamps: true 
+  timestamps: true
 })
 
 export const Password = mongoose.models?.Password || mongoose.model('Password', passwordSchema)
