@@ -17,21 +17,29 @@ const passwordSchema = new mongoose.Schema({
     required: true
   },
   username: String,
-  password: {
+  encryptedData: {  
     type: String,
     required: true
   },
-  recoveryData: String,
+  iv: {        
+    type: String,
+    required: true
+  },
+  salt: {      
+    type: String,
+    required: true
+  },
   url: String,
   notes: String,
-  lastCopied: Date,
   priorityLevel: {
     type: String,
     enum: Object.values(PriorityLevel),
     default: PriorityLevel.LOW
-  }
+  },
+  lastCopied: Date
 }, {
   timestamps: true
 })
 
 export const Password = mongoose.models?.Password || mongoose.model('Password', passwordSchema)
+export type IPassword = mongoose.InferSchemaType<typeof passwordSchema>
