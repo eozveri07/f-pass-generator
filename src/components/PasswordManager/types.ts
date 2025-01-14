@@ -15,4 +15,5 @@ export interface Password {
 export interface TotpDialogState {
   isOpen: boolean
   passwordId: string | null
+  action: 'view' | 'delete' | null
 }

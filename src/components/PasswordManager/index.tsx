@@ -28,7 +28,8 @@ export default function PasswordManager() {
   const [selectedPassword, setSelectedPassword] = useState<Password | null>(null)
   const [totpDialog, setTotpDialog] = useState<TotpDialogState>({
     isOpen: false,
-    passwordId: null
+    passwordId: null,
+    action: null
   })
   const { toast } = useToast()
 
@@ -53,9 +54,10 @@ export default function PasswordManager() {
     fetchPasswords()
   }, [])
 
-  const verifyTotpAndGetPassword = async (passwordId: string, code: string) => {
+  const verifyTotpAndProcess = async (passwordId: string, code: string, action: 'view' | 'delete') => {
     try {
-      const response = await fetch('/api/passwords/verify-totp', {
+      // First verify the TOTP code
+      const verifyResponse = await fetch('/api/passwords/verify-totp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,24 +66,29 @@ export default function PasswordManager() {
         })
       })
 
-      if (!response.ok) {
+      if (!verifyResponse.ok) {
         throw new Error('Invalid code')
       }
 
-      const data = await response.json()
-      
-      setPasswords(prev => prev.map(p => 
-        p._id === passwordId 
-          ? { ...p, password: data.password, requiresTotp: false }
-          : p
-      ))
+      // If the action is view, get the password
+      if (action === 'view') {
+        const data = await verifyResponse.json()
+        setPasswords(prev => prev.map(p => 
+          p._id === passwordId 
+            ? { ...p, password: data.password, requiresTotp: false }
+            : p
+        ))
+        toast({
+          title: "Success",
+          description: "Password unlocked successfully",
+        })
+      } 
+      // If the action is delete, proceed with deletion
+      else if (action === 'delete') {
+        await handleDelete(passwordId)
+      }
 
-      setTotpDialog({ isOpen: false, passwordId: null })
-      
-      toast({
-        title: "Success",
-        description: "Password unlocked successfully",
-      })
+      setTotpDialog({ isOpen: false, passwordId: null, action: null })
     } catch (error) {
       toast({
         title: "Error",
@@ -271,9 +278,10 @@ export default function PasswordManager() {
         onCopyPassword={copyToClipboard}
         onEdit={setSelectedPassword}
         onDelete={handleDelete}
-        onTotpRequest={(id) => setTotpDialog({
+        onTotpRequest={(id, action) => setTotpDialog({
           isOpen: true,
-          passwordId: id
+          passwordId: id,
+          action
         })}
       />
 
@@ -303,8 +311,8 @@ export default function PasswordManager() {
       {/* TOTP Dialog */}
       <TotpDialog 
         dialogState={totpDialog}
-        onClose={() => setTotpDialog({ isOpen: false, passwordId: null })}
-        onVerify={verifyTotpAndGetPassword}
+        onClose={() => setTotpDialog({ isOpen: false, passwordId: null, action: null })}
+        onVerify={verifyTotpAndProcess}
       />
     </div>
   )

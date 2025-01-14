@@ -13,11 +13,44 @@ import { TotpDialogState } from "./types"
 interface TotpDialogProps {
   dialogState: TotpDialogState
   onClose: () => void
-  onVerify: (passwordId: string, code: string) => void
+  onVerify: (passwordId: string, code: string, action: 'view' | 'delete') => void
 }
 
 export function TotpDialog({ dialogState, onClose, onVerify }: TotpDialogProps) {
   const [totpCode, setTotpCode] = useState("")
+
+  const getDialogTitle = () => {
+    switch (dialogState.action) {
+      case 'delete':
+        return "2FA Authentication Required"
+      case 'view':
+        return "Enter 2FA Code"
+      default:
+        return "2FA Authentication"
+    }
+  }
+
+  const getDialogDescription = () => {
+    switch (dialogState.action) {
+      case 'delete':
+        return "Enter the 6-digit code from your authenticator app to confirm password deletion."
+      case 'view':
+        return "Enter the 6-digit code from your authenticator app to view this password."
+      default:
+        return "Enter your 6-digit authentication code."
+    }
+  }
+
+  const getButtonText = () => {
+    switch (dialogState.action) {
+      case 'delete':
+        return "Verify and Delete"
+      case 'view':
+        return "View Password"
+      default:
+        return "Verify"
+    }
+  }
 
   return (
     <Dialog
@@ -31,10 +64,8 @@ export function TotpDialog({ dialogState, onClose, onVerify }: TotpDialogProps) 
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enter 2FA Code</DialogTitle>
-          <DialogDescription>
-            Enter the 6-digit code from your authenticator app to view this password.
-          </DialogDescription>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
+          <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col space-y-4">
           <Input
@@ -45,10 +76,12 @@ export function TotpDialog({ dialogState, onClose, onVerify }: TotpDialogProps) 
             className="text-center text-2xl tracking-widest"
           />
           <Button 
-            onClick={() => dialogState.passwordId && onVerify(dialogState.passwordId, totpCode)}
+            onClick={() => dialogState.passwordId && dialogState.action && 
+              onVerify(dialogState.passwordId, totpCode, dialogState.action)}
             disabled={totpCode.length !== 6}
+            variant={dialogState.action === 'delete' ? 'destructive' : 'default'}
           >
-            Verify
+            {getButtonText()}
           </Button>
         </div>
       </DialogContent>
