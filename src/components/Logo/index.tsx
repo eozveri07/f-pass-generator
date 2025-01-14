@@ -1,3 +1,4 @@
+"use client";
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import LightLogo from '/public/images/logo-light.svg';
