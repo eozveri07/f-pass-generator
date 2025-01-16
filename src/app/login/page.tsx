@@ -66,7 +66,7 @@ export default function SignIn() {
               </motion.h2>
               <Button
                 className="w-full py-6 text-lg"
-                onClick={() => signIn("google", { callbackUrl: "/admin" })}
+                onClick={() => signIn("google", { callbackUrl: "/2fa" })}
               >
                 <svg
                   className="mr-2 h-5 w-5"

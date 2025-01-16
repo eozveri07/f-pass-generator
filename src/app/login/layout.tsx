@@ -7,8 +7,6 @@ export default async function LoginLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-
-  if (session?.user) return redirect("/admin");
-
+  if (session?.user) redirect("/admin");
   return children;
 }
