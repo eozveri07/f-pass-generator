@@ -193,12 +193,12 @@ export default function PasswordManager() {
     if (!password) return;
 
     try {
-      const decrypted = await ClientCrypto.decrypt(
-        password.encryptedData,
-        password.iv,
-        password.salt,
-        masterPassword
-      );
+      const decrypted = await ClientCrypto.decrypt({
+        encryptedData: password.encryptedData,
+        iv: password.iv,
+        salt: password.salt,
+        masterPassword: masterPassword
+      });
 
       setPasswords((prev) =>
         prev.map((p) =>
@@ -232,12 +232,12 @@ export default function PasswordManager() {
     if (!password) return;
 
     try {
-      const decrypted = await ClientCrypto.decrypt(
-        password.encryptedData,
-        password.iv,
-        password.salt,
-        masterPassword
-      );
+      const decrypted = await ClientCrypto.decrypt({
+        encryptedData: password.encryptedData,
+        iv: password.iv,
+        salt: password.salt,
+        masterPassword: masterPassword
+      });
 
       await navigator.clipboard.writeText(decrypted);
 

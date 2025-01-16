@@ -105,7 +105,7 @@ export class ClientCrypto {
           iv: this.base64ToArrayBuffer(iv)
         },
         key,
-        this.base64ToArrayBuffer(encryptedData).buffer
+        this.base64ToArrayBuffer(encryptedData)
       )
 
       return dec.decode(decrypted)
