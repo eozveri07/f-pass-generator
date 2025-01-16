@@ -129,7 +129,7 @@ export function PasswordTable({
                   ) : (
                     <div className="flex items-center space-x-2">
                       <span className="font-mono">
-                        {showPassword[password._id] ? password.password : "••••••••"}
+                        {showPassword[password._id] ? password.decryptedPassword : "••••••••"}
                       </span>
                       <Button
                         variant="ghost"
@@ -143,12 +143,12 @@ export function PasswordTable({
                         )}
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onCopyPassword(password._id, password.password)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+  variant="ghost"
+  size="sm"
+  onClick={() => password.decryptedPassword && onCopyPassword(password._id, password.decryptedPassword)}
+>
+  <Copy className="h-4 w-4" />
+</Button>
                     </div>
                   )}
                 </TableCell>
