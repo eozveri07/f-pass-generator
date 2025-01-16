@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 
-export function TwoFactorSetup() {
+interface TwoFactorSetupProps {
+  onSuccess?: () => void
+}
+
+export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
   const [qrCode, setQrCode] = useState<string>("")
   const [secret, setSecret] = useState<string>("")
   const [token, setToken] = useState("")
@@ -56,6 +60,8 @@ export function TwoFactorSetup() {
       setQrCode("")
       setSecret("")
       setToken("")
+      onSuccess?.()
+
     } catch (error) {
       toast({
         title: "Error",
