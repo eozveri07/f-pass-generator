@@ -2,7 +2,9 @@ export interface Password {
   _id: string
   title: string
   username?: string
-  password: string
+  encryptedData: string
+  iv: string
+  salt: string
   url?: string
   notes?: string
   lastCopied?: string
@@ -10,6 +12,7 @@ export interface Password {
   createdAt: string
   updatedAt: string
   requiresTotp?: boolean
+  decryptedPassword?: string
 }
 
 export interface TotpDialogState {
