@@ -22,7 +22,6 @@ export default function MasterKeySetup() {
   const { data: session } = useSession();
   const [masterKeySalt, setMasterKey] = useState("");
   const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -38,8 +37,6 @@ export default function MasterKeySetup() {
       }
     } catch (error) {
       console.error("Error checking master key status:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -74,7 +71,9 @@ export default function MasterKeySetup() {
         });
 
         if (response.ok) {
-          const masterKey = await ClientCrypto.hashMasterPassword(masterKeySalt);
+          const masterKey = await ClientCrypto.hashMasterPassword(
+            masterKeySalt
+          );
           Cookies.set("master_key", masterKey);
           router.push("/admin");
         }
@@ -84,7 +83,9 @@ export default function MasterKeySetup() {
           const checkMaster = await checkMasterKeySalt(userMail, masterKeySalt);
 
           if (checkMaster) {
-            const masterKey = await ClientCrypto.hashMasterPassword(masterKeySalt);
+            const masterKey = await ClientCrypto.hashMasterPassword(
+              masterKeySalt
+            );
             Cookies.set("master_key", masterKey);
             router.push("/admin");
           } else {
@@ -105,16 +106,12 @@ export default function MasterKeySetup() {
     }
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-200 to-indigo-200 dark:from-gray-950 dark:via-indigo-950 dark:to-blue-900 blur-2xl transform scale-110"></div>
       <div className="relative min-h-screen z-20 flex flex-col items-center justify-between p-8">
         <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/95 dark:from-black/60 dark:to-black/95 pointer-events-none"></div>
-        
+
         {isDarkMode && (
           <div className="absolute inset-0 z-30 hidden dark:block pointer-events-none">
             <SpotlightPreview />
