@@ -1,9 +1,8 @@
-// app/api/passwords/[id]/route.ts
 import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
 import { Password } from '@/models/password'
-import { EncryptionService } from '@/lib/encryption'
+import { User } from '@/models/user'
 
 export async function PUT(
   req: Request,
@@ -18,9 +17,18 @@ export async function PUT(
     }
 
     const body = await req.json()
-    const { title, username, password, url, notes } = body
+    const { 
+      title, 
+      username, 
+      encryptedData, // Client'da şifrelenmiş veri 
+      iv,            // Yeni IV
+      salt,          // Yeni salt
+      url, 
+      notes,
+      priorityLevel 
+    } = body
 
-    // Verify ownership
+    // Mülkiyet kontrolü
     const existingPassword = await Password.findOne({
       _id: params.id,
       userId: session.user.id
@@ -30,26 +38,27 @@ export async function PUT(
       return new NextResponse("Not Found", { status: 404 })
     }
 
-    // Eğer şifre değiştiyse yeni şifreyi encrypt et
-    let encryptedData = existingPassword.password
-    let recoveryData = existingPassword.recoveryData
+    // Eğer yeni şifre varsa şifrelenmiş veri ve bileşenleri güncelle
+    const updateData: any = {
+      title,
+      username,
+      url,
+      notes
+    }
 
-    if (password) {
-      const encrypted = EncryptionService.encrypt(password, process.env.ENCRYPTION_KEY!)
-      encryptedData = encrypted.encryptedText
-      recoveryData = encrypted.recoveryData
+    if (encryptedData && iv && salt) {
+      updateData.encryptedData = encryptedData
+      updateData.iv = iv
+      updateData.salt = salt
+    }
+
+    if (priorityLevel !== undefined) {
+      updateData.priorityLevel = priorityLevel
     }
 
     const updatedPassword = await Password.findByIdAndUpdate(
       params.id,
-      {
-        title,
-        username,
-        password: encryptedData,
-        recoveryData,
-        url,
-        notes
-      },
+      updateData,
       { new: true }
     )
 
@@ -73,7 +82,7 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    // Update lastCopied date
+    // Sadece lastCopied tarihini güncelle
     const updatedPassword = await Password.findOneAndUpdate(
       {
         _id: params.id,
@@ -108,7 +117,11 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const password = await Password.findOneAndDelete({
+    const { searchParams } = new URL(req.url)
+    const totpToken = searchParams.get('totpToken')
+
+    // HIGH priority şifreleri için 2FA kontrolü
+    const password = await Password.findOne({
       _id: params.id,
       userId: session.user.id
     })
@@ -116,6 +129,27 @@ export async function DELETE(
     if (!password) {
       return new NextResponse("Not Found", { status: 404 })
     }
+
+    // Eğer yüksek öncelikli şifre ise 2FA kontrolü yap
+    if (password.priorityLevel === 'high') {
+      const user = await User.findById(session.user.id)
+      if (!user?.twoFactorSecret || !totpToken) {
+        return new NextResponse("2FA required", { status: 403 })
+      }
+
+      // 2FA token'ını kontrol et
+      const isValidToken = await import('@/lib/totp')
+        .then(({ TOTPService }) => 
+          TOTPService.verifyToken(totpToken, user.twoFactorSecret)
+        )
+
+      if (!isValidToken) {
+        return new NextResponse("Invalid 2FA token", { status: 403 })
+      }
+    }
+
+    // Şifreyi sil
+    await Password.findByIdAndDelete(params.id)
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
