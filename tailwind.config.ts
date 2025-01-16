@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+		fontFamily: {
+			sans: ['var(--font-sans)'],
+		  },
 		animation: {
 			spotlight: "spotlight 2s ease .75s 1 forwards",
 		  },
