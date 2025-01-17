@@ -22,7 +22,7 @@ export const checkMasterKeySalt = async (email:string , MasterKeySalt:string) =>
         const masterKeyHash = user.masterKeyHash;
         const compare = bc.compare(MasterKeySalt ,masterKeyHash)
         return compare
-    } catch (error) {
+    } catch  {
         return null;
     }
 }
