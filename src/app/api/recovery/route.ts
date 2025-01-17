@@ -5,7 +5,7 @@ import { Password } from '@/models/password'
 import { User } from '@/models/user'
 import { EncryptionService } from '@/lib/encryption'
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     await dbConnect()
     const session = await auth()

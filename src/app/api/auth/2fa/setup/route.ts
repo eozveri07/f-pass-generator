@@ -5,7 +5,7 @@ import { User } from '@/models/user'
 import { TOTPService } from '@/lib/totp'
 import { EncryptionService } from '@/lib/encryption'
 
-export async function POST(req: Request) {
+export async function POST() {
     try {
       await dbConnect()
       const session = await auth()

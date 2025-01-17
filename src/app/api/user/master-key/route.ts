@@ -5,7 +5,7 @@ import { User } from '@/models/user'
 import bc from "bcryptjs"
 
 // app/api/user/master-key/route.ts
-export async function POST(req: Request) {
+export async function POST() {
     try {
       await dbConnect()
       const session = await auth()

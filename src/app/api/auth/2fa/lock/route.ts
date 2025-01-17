@@ -3,7 +3,7 @@ import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
 import { User } from '@/models/user'
 
-export async function POST(req: Request) {
+export async function POST() {
     try {
       await dbConnect()
       const session = await auth()

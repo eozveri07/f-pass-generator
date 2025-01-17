@@ -6,7 +6,7 @@ import { User } from '@/models/user'
 
 const UNLOCK_DURATION = 5 * 60 * 1000 
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     await dbConnect()
     const session = await auth()
