@@ -97,7 +97,7 @@ export default function MasterKeySetup() {
           }
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Something went wrong",
