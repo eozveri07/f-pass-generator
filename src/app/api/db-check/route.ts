@@ -1,7 +1,7 @@
 import dbConnect from '@/lib/mongoose'
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     await dbConnect()
     return NextResponse.json({

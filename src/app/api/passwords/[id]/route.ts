@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
 import { Password } from '@/models/password'
-import { User } from '@/models/user'
 
 interface PasswordUpdateData {
   title?: string

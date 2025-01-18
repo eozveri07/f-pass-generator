@@ -4,8 +4,11 @@ import dbConnect from '@/lib/mongoose'
 import { User } from '@/models/user'
 import bc from "bcryptjs"
 
-// app/api/user/master-key/route.ts
-export async function POST() {
+interface CustomError {
+  message: string;
+}
+
+export async function POST(request: Request) {  
     try {
       await dbConnect()
       const session = await auth()
@@ -16,18 +19,16 @@ export async function POST() {
         return new NextResponse("Unauthorized", { status: 401 })
       }
   
-      const { masterKeySalt } = await req.json()
+      const { masterKeySalt } = await request.json()  
   
-      // Kullanıcıyı bul
       let user = await User.findOne({ email: session.user.email })
 
       const masterKey = await bc.hash(masterKeySalt , 10) 
   
-      // User varsa güncelle, yoksa oluştur
       if (user) {
         user.masterKeyHash = masterKey
         user.masterKeySetAt = new Date()
-        await user.save() // save() metodu ile güncelle
+        await user.save()
         console.log('Updated user:', user)
       } else {
         user = await User.create({
@@ -47,9 +48,11 @@ export async function POST() {
       })
     } catch (error) {
       console.error('Error setting master key:', error)
-      return new NextResponse(JSON.stringify({ error: (error as any).message }), {
+      return new NextResponse(JSON.stringify({ 
+        error: (error as CustomError).message 
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       })
     }
-  }
+}
