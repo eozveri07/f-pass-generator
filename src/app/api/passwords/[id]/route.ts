@@ -12,6 +12,8 @@ interface PasswordUpdateData {
   url?: string
   notes?: string
   priorityLevel?: 'high' | 'medium' | 'low'
+  groupId?: string | null
+  tags?: string[]
 }
 
 export async function PUT(
@@ -35,7 +37,9 @@ export async function PUT(
       salt,
       url, 
       notes,
-      priorityLevel 
+      priorityLevel,
+      groupId,
+      tags
     } = body
 
     const existingPassword = await Password.findOne({
@@ -64,11 +68,19 @@ export async function PUT(
       updateData.priorityLevel = priorityLevel
     }
 
+    if (groupId !== undefined) {
+      updateData.groupId = groupId
+    }
+
+    if (tags !== undefined) {
+      updateData.tags = tags
+    }
+
     const updatedPassword = await Password.findByIdAndUpdate(
       params.id,
       updateData,
       { new: true }
-    )
+    ).populate('groupId').populate('tags')
 
     return NextResponse.json(updatedPassword)
   } catch (error) {
