@@ -36,7 +36,17 @@ const passwordSchema = new mongoose.Schema({
     enum: Object.values(PriorityLevel),
     default: PriorityLevel.LOW
   },
-  lastCopied: Date
+  lastCopied: Date,
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Group',
+    required: false
+  },
+  tags: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag',
+    required: false
+  }]
 }, {
   timestamps: true
 })
