@@ -20,6 +20,7 @@ import { TotpDialog } from "./TotpDialog";
 import { ClientCrypto } from "@/lib/client-crypto";
 import Cookies from "js-cookie";
 import { TwoFactorDialog } from "../TwoFactorDialog";
+import { AttributesDialog } from "./AttributesDialog";
 
 export default function PasswordManager() {
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -288,6 +289,7 @@ export default function PasswordManager() {
         </div>
         <div className="flex items-center space-x-2">
           <TwoFactorDialog />
+          <AttributesDialog />
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>

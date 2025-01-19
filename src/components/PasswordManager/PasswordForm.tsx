@@ -1,5 +1,5 @@
 "use client";
-
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { ClientCrypto } from "@/lib/client-crypto";
-import { Password } from "./types";
+import { Password, Tag, Group } from "./types";
+import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
 
 interface PasswordFormProps {
@@ -28,36 +43,63 @@ export function PasswordForm({
   onCancel,
 }: PasswordFormProps) {
   const masterPassword = Cookies.get("master_key");
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [openCombobox, setOpenCombobox] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string>(initialData?.tags?.[0] || "none");
+
+
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const [groupsRes, tagsRes] = await Promise.all([
+          fetch('/api/groups'),
+          fetch('/api/tags')
+        ]);
+
+        if (groupsRes.ok && tagsRes.ok) {
+          const [groupsData, tagsData] = await Promise.all([
+            groupsRes.json(),
+            tagsRes.json()
+          ]);
+
+          setGroups(groupsData);
+          setTags(tagsData);
+        }
+      } catch (error) {
+        console.error('Error fetching attributes:', error);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-
     if (!masterPassword) return;
-
+  
     try {
+      const formData = new FormData(e.currentTarget);
       const { encryptedData, iv, salt } = await ClientCrypto.encrypt(
         formData.get("password") as string,
         masterPassword
       );
-
-      const title = formData.get("title"),
-        username = formData.get("username"),
-        url = formData.get("url"),
-        notes = formData.get("notes"),
-        priorityLevel = formData.get("priorityLevel");
-
+  
+      const groupId = formData.get("groupId") as string;
+  
       const passwordData: Partial<Password> = {
-        title: title as string,
-        username: username as string,
+        title: formData.get("title") as string,
+        username: formData.get("username") as string,
         encryptedData,
         iv,
         salt,
-        url: url as string,
-        notes: notes as string,
-        priorityLevel: priorityLevel as "low" | "medium" | "high",
+        url: formData.get("url") as string,
+        notes: formData.get("notes") as string,
+        priorityLevel: formData.get("priorityLevel") as "low" | "medium" | "high",
+        groupId: groupId === "none" ? null : groupId,
+        tags: selectedTag === "none" ? [] : [selectedTag] // Tekli tag için güncellendi
       };
-
+  
       await onSubmit(passwordData);
     } catch (error) {
       console.error("Encryption failed:", error);
@@ -94,6 +136,47 @@ export function PasswordForm({
           required={!initialData}
         />
       </div>
+
+      <div className="space-y-2">
+  <Label htmlFor="groupId">Group</Label>
+  <Select name="groupId" defaultValue={initialData?.groupId || "none"}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select a group" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">No Group</SelectItem>
+      {groups.map((group) => (
+        <SelectItem key={group._id} value={group._id}>
+          {group.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+<div className="space-y-2">
+  <Label>Tag</Label>
+  <Select 
+    value={selectedTag} 
+    onValueChange={setSelectedTag}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select a tag" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">No Tag</SelectItem>
+      {tags.map((tag) => (
+        <SelectItem key={tag._id} value={tag._id}>
+          <div className="flex items-center gap-2">
+            <Badge style={{ backgroundColor: tag.color }}>
+              {tag.name}
+            </Badge>
+          </div>
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
       <div className="space-y-2">
         <Label htmlFor="priorityLevel">Priority Level *</Label>
