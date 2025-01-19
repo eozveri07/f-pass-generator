@@ -11,7 +11,7 @@ const RECOVERY_KEY_LENGTH = 32
 
 interface EncryptedData {
   encryptedText: string
-  recoveryData?: string  // Recovery ile şifrelenmiş versiyon
+  recoveryData?: string 
 }
 
 interface DecryptedData {
@@ -19,7 +19,6 @@ interface DecryptedData {
   recoveryKey?: string
 }
 
-// Ana şifreleme fonksiyonları
 export class EncryptionService {
   private static deriveKey(password: string, salt: Buffer): Buffer {
     return crypto.pbkdf2Sync(
@@ -31,7 +30,6 @@ export class EncryptionService {
     )
   }
 
-  // Şifreleme işlemi
   static encrypt(text: string, masterKey: string): EncryptedData {
     if (!text || !masterKey) {
       throw new Error('Text and master key are required')
@@ -41,17 +39,14 @@ export class EncryptionService {
       const iv = crypto.randomBytes(IV_LENGTH)
       const salt = crypto.randomBytes(SALT_LENGTH)
       
-      // Ana şifreleme
       const key = this.deriveKey(masterKey, salt)
       const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
       let encrypted = cipher.update(text, 'utf8', 'hex')
       encrypted += cipher.final('hex')
       const authTag = cipher.getAuthTag()
 
-      // Recovery key oluştur
       const recoveryKey = crypto.randomBytes(RECOVERY_KEY_LENGTH).toString('hex')
       
-      // Recovery data oluştur
       const recoveryData = this.encryptWithRecoveryKey(text, recoveryKey)
 
       const mainEncrypted = Buffer.concat([
@@ -65,19 +60,17 @@ export class EncryptionService {
         encryptedText: mainEncrypted,
         recoveryData: recoveryData
       }
-    } catch (error) {
+    } catch {
       throw new Error('Encryption failed')
     }
   }
 
-  // Şifre çözme işlemi
   static decrypt(encryptedData: EncryptedData, key: string, isRecovery = false): DecryptedData {
     if (!encryptedData || !key) {
       throw new Error('Encrypted data and key are required')
     }
 
     try {
-      // Recovery key ile çözmeyi dene
       if (isRecovery && encryptedData.recoveryData) {
         return {
           text: this.decryptWithRecoveryKey(encryptedData.recoveryData, key),
@@ -85,7 +78,6 @@ export class EncryptionService {
         }
       }
 
-      // Normal şifre çözme
       const buffer = Buffer.from(encryptedData.encryptedText, 'base64')
       
       const salt = buffer.slice(0, SALT_LENGTH)
@@ -101,12 +93,11 @@ export class EncryptionService {
       decrypted = Buffer.concat([decrypted, decipher.final()])
       
       return { text: decrypted.toString('utf8') }
-    } catch (error) {
+    } catch {
       throw new Error('Decryption failed')
     }
   }
 
-  // Recovery key ile şifreleme
   private static encryptWithRecoveryKey(text: string, recoveryKey: string): string {
     const iv = crypto.randomBytes(IV_LENGTH)
     const key = crypto.createHash('sha256').update(recoveryKey).digest()
@@ -123,7 +114,6 @@ export class EncryptionService {
     ]).toString('base64')
   }
 
-  // Recovery key ile şifre çözme
   private static decryptWithRecoveryKey(encryptedText: string, recoveryKey: string): string {
     const buffer = Buffer.from(encryptedText, 'base64')
     
@@ -141,23 +131,19 @@ export class EncryptionService {
     return decrypted.toString('utf8')
   }
 
-  // Recovery key oluşturma
   static generateRecoveryKey(): string {
     return crypto.randomBytes(RECOVERY_KEY_LENGTH).toString('hex')
   }
 
-  // Master password hashing
   static async hashMasterPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12)
   }
 
-  // Master password doğrulama
   static async verifyMasterPassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash)
   }
 }
 
-// MongoDB model güncellemesi için interface
 export interface PasswordDocument {
   userId: string
   title: string
