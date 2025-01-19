@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -26,7 +25,6 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 
 interface TwoFactorStatus {
@@ -54,8 +52,8 @@ export function TwoFactorDialog() {
       if (data.remainingTime) {
         setRemainingTime(data.remainingTime);
       }
-    } catch (error) {
-      console.error("Error fetching 2FA status:", error);
+    } catch {
+      console.error("Error fetching 2FA status");
       toast({
         title: "Error",
         description: "Failed to fetch 2FA status",
@@ -97,7 +95,7 @@ export function TwoFactorDialog() {
         title: "Success",
         description: "2FA unlocked for 5 minutes",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Invalid verification code",
@@ -127,7 +125,7 @@ export function TwoFactorDialog() {
         title: "Success",
         description: successMessage,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: errorMessage,
@@ -180,29 +178,6 @@ export function TwoFactorDialog() {
         ) : (
           "Unlock"
         )}
-      </Button>
-    </div>
-  );
-
-  const renderManagementButtons = () => (
-    <div className="grid grid-cols-2 gap-4">
-      <Button
-        variant="outline"
-        onClick={() => handleAction("lock")}
-        disabled={isLoading}
-        className="w-full"
-      >
-        <ShieldAlert className="h-4 w-4 mr-2" />
-        Lock 2FA
-      </Button>
-      <Button
-        variant="destructive"
-        onClick={() => handleAction("disable")}
-        disabled={isLoading}
-        className="w-full"
-      >
-        <ShieldMinus className="h-4 w-4 mr-2" />
-        Remove 2FA
       </Button>
     </div>
   );

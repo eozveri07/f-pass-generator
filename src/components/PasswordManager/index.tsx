@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,6 @@ export default function PasswordManager() {
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = useState("");
-  
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedPassword, setSelectedPassword] = useState<Password | null>(
     null
@@ -37,15 +36,16 @@ export default function PasswordManager() {
     passwordId: null as string | null,
     action: null as "view" | "delete" | null,
   });
+
   const { toast } = useToast();
 
-  const fetchPasswords = async () => {
+  const fetchPasswords = useCallback(async () => {
     try {
       const response = await fetch("/api/passwords");
       if (!response.ok) throw new Error("Failed to fetch passwords");
       const data = await response.json();
       setPasswords(data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to fetch passwords",
@@ -54,7 +54,7 @@ export default function PasswordManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     const masterKeyHash = Cookies.get("master_key");
@@ -62,9 +62,9 @@ export default function PasswordManager() {
       setMasterPassword(masterKeyHash);
       fetchPasswords();
     }
-  }, []);
+  }, [fetchPasswords]);
 
-  const handleAddPassword = async (formData: FormData) => {
+  const handleAddPassword = async (passwordData: Partial<Password>) => {
     if (!masterPassword) {
       toast({
         title: "Error",
@@ -74,22 +74,7 @@ export default function PasswordManager() {
       return;
     }
 
-    const password = formData.get("password") as string;
-
     try {
-      const encrypted = await ClientCrypto.encrypt(password, masterPassword);
-
-      const passwordData = {
-        title: formData.get("title"),
-        username: formData.get("username"),
-        encryptedData: encrypted.encryptedData,
-        iv: encrypted.iv,
-        salt: encrypted.salt,
-        url: formData.get("url"),
-        notes: formData.get("notes"),
-        priorityLevel: formData.get("priorityLevel"),
-      };
-
       const response = await fetch("/api/passwords", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -104,7 +89,7 @@ export default function PasswordManager() {
         title: "Success",
         description: "Password added successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to add password",
@@ -113,27 +98,10 @@ export default function PasswordManager() {
     }
   };
 
-  const handleEditPassword = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleEditPassword = async (passwordData: Partial<Password>) => {
     if (!selectedPassword || !masterPassword) return;
 
-    const formData = new FormData(e.currentTarget);
-    const newPassword = formData.get("password") as string;
-
     try {
-      const encrypted = await ClientCrypto.encrypt(newPassword, masterPassword);
-
-      const passwordData = {
-        title: formData.get("title"),
-        username: formData.get("username"),
-        encryptedData: encrypted.encryptedData,
-        iv: encrypted.iv,
-        salt: encrypted.salt,
-        url: formData.get("url"),
-        notes: formData.get("notes"),
-        priorityLevel: formData.get("priorityLevel"),
-      };
-
       const response = await fetch(`/api/passwords/${selectedPassword._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -148,7 +116,7 @@ export default function PasswordManager() {
         title: "Success",
         description: "Password updated successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update password",
@@ -170,7 +138,7 @@ export default function PasswordManager() {
         title: "Success",
         description: "Password deleted successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete password",
@@ -197,7 +165,7 @@ export default function PasswordManager() {
         encryptedData: password.encryptedData,
         iv: password.iv,
         salt: password.salt,
-        masterPassword: masterPassword
+        masterPassword: masterPassword,
       });
 
       setPasswords((prev) =>
@@ -209,7 +177,7 @@ export default function PasswordManager() {
         ...prev,
         [id]: !prev[id],
       }));
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Invalid master password",
@@ -236,11 +204,10 @@ export default function PasswordManager() {
         encryptedData: password.encryptedData,
         iv: password.iv,
         salt: password.salt,
-        masterPassword: masterPassword
+        masterPassword: masterPassword,
       });
 
       await navigator.clipboard.writeText(decrypted);
-
       const response = await fetch(`/api/passwords/${id}`, {
         method: "PATCH",
       });
@@ -253,7 +220,7 @@ export default function PasswordManager() {
         description: "Password copied to clipboard",
         duration: 2000,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy password",
@@ -286,7 +253,7 @@ export default function PasswordManager() {
       }
 
       setTotpDialog({ isOpen: false, passwordId: null, action: null });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Invalid verification code",
@@ -302,7 +269,7 @@ export default function PasswordManager() {
       password.url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       password.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  // TODO: GİBİ DİNLENECEK
+
   if (loading) {
     return <div className="text-center py-4">Loading passwords...</div>;
   }
@@ -344,6 +311,7 @@ export default function PasswordManager() {
           </Dialog>
         </div>
       </div>
+
       <PasswordTable
         passwords={filteredPasswords}
         showPassword={showPassword}

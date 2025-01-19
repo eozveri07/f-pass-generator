@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,15 +15,15 @@ import { Password } from "./types";
 import Cookies from "js-cookie";
 
 interface PasswordFormProps {
-  onSubmit: (data: any) => Promise<void>;
-  initialData?: Password | null;
+  onSubmit: (data: Partial<Password>) => Promise<void>;
+  initialData?: Partial<Password>;
   buttonText?: string;
   onCancel: () => void;
 }
 
 export function PasswordForm({
   onSubmit,
-  initialData = null,
+  initialData = {},
   buttonText = "Save",
   onCancel,
 }: PasswordFormProps) {
@@ -34,10 +33,9 @@ export function PasswordForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    if (!masterPassword) return; //2FA girilmedi demek , 2fa ekranına atılabilir
+    if (!masterPassword) return;
 
     try {
-      // Şifreleme işlemi
       const { encryptedData, iv, salt } = await ClientCrypto.encrypt(
         formData.get("password") as string,
         masterPassword
@@ -49,15 +47,15 @@ export function PasswordForm({
         notes = formData.get("notes"),
         priorityLevel = formData.get("priorityLevel");
 
-      const passwordData = {
-        title,
-        username,
+      const passwordData: Partial<Password> = {
+        title: title as string,
+        username: username as string,
         encryptedData,
         iv,
         salt,
-        url,
-        notes,
-        priorityLevel,
+        url: url as string,
+        notes: notes as string,
+        priorityLevel: priorityLevel as "low" | "medium" | "high",
       };
 
       await onSubmit(passwordData);

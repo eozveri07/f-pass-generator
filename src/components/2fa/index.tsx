@@ -1,45 +1,51 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 interface TwoFactorSetupProps {
-  onSuccess?: () => void
+  onSuccess?: () => void;
 }
 
 export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
-  const [qrCode, setQrCode] = useState<string>("")
-  const [secret, setSecret] = useState<string>("")
-  const [token, setToken] = useState("")
-  const [isSettingUp, setIsSettingUp] = useState(false)
-  const { toast } = useToast()
+  const [qrCode, setQrCode] = useState<string>("");
+  const [secret, setSecret] = useState<string>("");
+  const [token, setToken] = useState("");
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const { toast } = useToast();
 
   const setupTwoFactor = async () => {
     try {
-      setIsSettingUp(true)
+      setIsSettingUp(true);
       const response = await fetch("/api/auth/2fa/setup", {
         method: "POST",
-      })
+      });
 
-      if (!response.ok) throw new Error("Setup failed")
+      if (!response.ok) throw new Error("Setup failed");
 
-      const data = await response.json()
-      setQrCode(data.qrCode)
-      setSecret(data.secret)
-    } catch (error) {
+      const data = await response.json();
+      setQrCode(data.qrCode);
+      setSecret(data.secret);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to set up 2FA",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSettingUp(false)
+      setIsSettingUp(false);
     }
-  }
+  };
 
   const verifyToken = async () => {
     try {
@@ -47,29 +53,27 @@ export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Verification failed")
+      if (!response.ok) throw new Error("Verification failed");
 
       toast({
         title: "Success",
         description: "Two-factor authentication enabled",
-      })
+      });
 
-      // Reset state
-      setQrCode("")
-      setSecret("")
-      setToken("")
-      onSuccess?.()
-
-    } catch (error) {
+      setQrCode("");
+      setSecret("");
+      setToken("");
+      onSuccess?.();
+    } catch {
       toast({
         title: "Error",
         description: "Invalid verification code",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   if (!qrCode) {
     return (
@@ -86,7 +90,7 @@ export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
           </Button>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -99,17 +103,12 @@ export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center">
-          <Image
-            src={qrCode}
-            alt="QR Code"
-            width={200}
-            height={200}
-          />
+          <Image src={qrCode} alt="QR Code" width={200} height={200} />
         </div>
-        
+
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            If you can't scan the QR code, enter this code manually:
+            If you can&apos;t scan the QR code, enter this code manually:
           </p>
           <code className="block bg-muted p-2 rounded text-center">
             {secret}
@@ -129,8 +128,8 @@ export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
           />
         </div>
 
-        <Button 
-          onClick={verifyToken} 
+        <Button
+          onClick={verifyToken}
           disabled={token.length !== 6}
           className="w-full"
         >
@@ -138,5 +137,5 @@ export function TwoFactorSetup({ onSuccess }: TwoFactorSetupProps) {
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }

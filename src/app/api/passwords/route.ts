@@ -5,7 +5,6 @@ import { Password, PriorityLevel } from '@/models/password'
 import { User } from '@/models/user'
 import { TOTPService } from '@/lib/totp'
 
-// GET /api/passwords
 export async function GET(req: Request) {
   try {
     await dbConnect()
@@ -15,7 +14,6 @@ export async function GET(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    // 2FA token'ı URL'den al
     const { searchParams } = new URL(req.url)
     const totpToken = searchParams.get('totpToken')
 
@@ -28,9 +26,7 @@ export async function GET(req: Request) {
       return new NextResponse("User not found", { status: 404 })
     }
 
-    // Şifreleri client'a gönder, şifre çözme işlemi client'da yapılacak
     const processedPasswords = passwords.map(pass => {
-      // Eğer priority HIGH ise ve geçerli 2FA token yoksa şifreyi gizle
       if (pass.priorityLevel === PriorityLevel.HIGH) {
         if (!totpToken || !user.twoFactorSecret) {
           return {
@@ -39,7 +35,6 @@ export async function GET(req: Request) {
           }
         }
 
-        // 2FA token'ı doğrula
         const isValidToken = TOTPService.verifyToken(totpToken, user.twoFactorSecret)
         if (!isValidToken) {
           return {
@@ -49,7 +44,6 @@ export async function GET(req: Request) {
         }
       }
 
-      // Şifrelenmiş veriyi ve diğer bilgileri client'a gönder
       return {
         ...pass.toObject(),
         requiresTotp: false
@@ -63,7 +57,6 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/passwords
 export async function POST(req: Request) {
   try {
     await dbConnect()
@@ -92,12 +85,10 @@ export async function POST(req: Request) {
       )
     }
 
-    // Priority level validasyonu
     if (!Object.values(PriorityLevel).includes(priorityLevel)) {
       return new NextResponse("Invalid priority level", { status: 400 })
     }
 
-    // Client'dan gelen şifrelenmiş veriyi direkt kaydet
     const newPassword = await Password.create({
       userId: session.user.id,
       title,
