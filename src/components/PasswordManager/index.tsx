@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search } from "lucide-react";
-import { Password } from "./types";
+import { Group, Password, Tag } from "./types";
 import { PasswordForm } from "./PasswordForm";
 import { PasswordTable } from "./PasswordTable";
 import { TotpDialog } from "./TotpDialog";
@@ -21,12 +21,17 @@ import { ClientCrypto } from "@/lib/client-crypto";
 import Cookies from "js-cookie";
 import { TwoFactorDialog } from "../TwoFactorDialog";
 import { AttributesDialog } from "./AttributesDialog";
+import { PasswordFilter } from "./PasswordFilter";
 
 export default function PasswordManager() {
   const [passwords, setPasswords] = useState<Password[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+const [groups, setGroups] = useState<Group[]>([]);
+const [selectedTags, setSelectedTags] = useState<string[]>([]);
+const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedPassword, setSelectedPassword] = useState<Password | null>(
     null
@@ -39,6 +44,29 @@ export default function PasswordManager() {
   });
 
   const { toast } = useToast();
+  const fetchAttributesAndStats = useCallback(async () => {
+    try {
+      const [tagsRes, groupsRes] = await Promise.all([
+        fetch("/api/tags"),
+        fetch("/api/groups"),
+      ]);
+      
+      if (tagsRes.ok && groupsRes.ok) {
+        const [tagsData, groupsData] = await Promise.all([
+          tagsRes.json(),
+          groupsRes.json(),
+        ]);
+        setTags(tagsData);
+        setGroups(groupsData);
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Veriler yüklenirken hata oluştu",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   const fetchPasswords = useCallback(async () => {
     try {
@@ -62,8 +90,22 @@ export default function PasswordManager() {
     if (masterKeyHash) {
       setMasterPassword(masterKeyHash);
       fetchPasswords();
+      fetchAttributesAndStats();
     }
-  }, [fetchPasswords]);
+  
+    // Event listener ekleyelim
+    const handleAttributeUpdate = () => {
+      fetchAttributesAndStats();
+    };
+  
+    window.addEventListener('attributesUpdated', handleAttributeUpdate);
+  
+    // Cleanup
+    return () => {
+      window.removeEventListener('attributesUpdated', handleAttributeUpdate);
+    };
+  }, [fetchPasswords, fetchAttributesAndStats]);
+  
 
   const handleAddPassword = async (passwordData: Partial<Password>) => {
     if (!masterPassword) {
@@ -98,6 +140,15 @@ export default function PasswordManager() {
       });
     }
   };
+
+  const handleFilterChange = (type: 'tags' | 'groups', ids: string[]) => {
+    if (type === 'tags') {
+      setSelectedTags(ids);
+    } else {
+      setSelectedGroups(ids);
+    }
+  };
+
 
   const handleEditPassword = async (passwordData: Partial<Password>) => {
     if (!selectedPassword || !masterPassword) return;
@@ -263,14 +314,27 @@ export default function PasswordManager() {
     }
   };
 
-  const filteredPasswords = passwords.filter(
-    (password) =>
-      password.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      password.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      password.url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      password.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredPasswords = passwords.filter((password) => {
+    // Arama filtrelemesi
+    const matchesSearch = searchTerm
+      ? password.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        password.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        password.url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        password.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+  
+    // Tag filtrelemesi
+    const matchesTags =
+      selectedTags.length === 0 ||
+      (password.tags && password.tags.some(tag => selectedTags.includes(tag._id)));
+  
+    // Group filtrelemesi
+    const matchesGroups =
+      selectedGroups.length === 0 ||
+      (password.groupId && selectedGroups.includes(password.groupId._id));
+  
+    return matchesSearch && matchesTags && matchesGroups;
+  });
   if (loading) {
     return <div className="text-center py-4">Loading passwords...</div>;
   }
@@ -278,15 +342,24 @@ export default function PasswordManager() {
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Search className="h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Search passwords..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
-          />
-        </div>
+      <div className="flex items-center space-x-2">
+  <div className="relative">
+    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+    <Input
+      placeholder="Search passwords..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="w-64 pl-8"
+    />
+  </div>
+  <PasswordFilter
+    tags={tags}
+    groups={groups}
+    selectedTags={selectedTags}
+    selectedGroups={selectedGroups}
+    onFilterChange={handleFilterChange}
+  />
+</div>
         <div className="flex items-center space-x-2">
           <TwoFactorDialog />
           <AttributesDialog />
