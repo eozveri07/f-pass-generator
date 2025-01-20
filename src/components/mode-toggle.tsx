@@ -1,104 +1,60 @@
-"use client";
-
-import useNextValue from "@/components/hooks/use-next-value";
-import { cn } from "@/lib/utils";
-import { SunMedium, Moon, SunMoon } from "lucide-react";
-import { motion, useAnimation } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { Moon, SunMedium, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
-	const [mounted, setMounted] = useState(false);
-	const { setTheme, theme } = useTheme();
-	const controlsSun = useAnimation();
-	const controlsMoon = useAnimation();
-	const controlsContrast = useAnimation();
+  const [mounted, setMounted] = useState(false);
+  const { setTheme, theme } = useTheme();
 
-	const iconVariants = {
-		visible: {
-			rotate: 0,
-			scale: 1,
-			opacity: 1,
-		},
-		hidden: {
-			scale: 0,
-			opacity: 0,
-			rotate: 180,
-		},
-	};
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+  if (!mounted) return null;
 
-	useEffect(() => {
-		if (!mounted) return;
+  const toggleTheme = () => {
+    if (theme === "light") {
+      setTheme("dark");
+    } else if (theme === "dark") {
+      setTheme("system");
+    } else {
+      setTheme("light");
+    }
+  };
 
-		if (theme === "system") {
-			controlsSun.start("hidden");
-			controlsContrast.start("visible");
-			controlsMoon.start("hidden");
-		} else {
-			controlsSun.start(theme === "light" ? "visible" : "hidden");
-			controlsMoon.start(theme === "dark" ? "visible" : "hidden");
-			controlsContrast.start("hidden");
-		}
-	}, [mounted, controlsContrast, controlsMoon, controlsSun, theme]);
+  const getIcon = () => {
+    switch (theme) {
+      case "light":
+        return (
+          <SunMedium className="w-6 h-6 text-zinc-900 transition-transform duration-200 hover:rotate-45" />
+        );
+      case "dark":
+        return (
+          <Moon className="w-6 h-6 text-zinc-300 transition-transform duration-200 hover:-rotate-12" />
+        );
+      case "system":
+        return (
+          <Monitor className="w-6 h-6 text-zinc-600 dark:text-zinc-300 transition-transform duration-200 hover:scale-110" />
+        );
+      default:
+        return (
+          <SunMedium className="w-6 h-6 text-zinc-900 transition-transform duration-200 hover:rotate-45" />
+        );
+    }
+  };
 
-	const nextTheme = useNextValue(
-		["light", "system", "dark"] as const,
-		theme as string
-	);
-
-	if (!mounted) {
-		return null;
-	}
-
-	return (
-		<button
-			className="cursor-pointer"  aria-label="Toggle Menu"
-			onClick={() => setTheme(nextTheme)}
-		>
-			<motion.div
-				whileHover={{ scale: 1.05 }}
-				whileTap={{ scale: 0.9 }}
-				className={cn(
-					"h-10 w-20 flex items-center bg-zinc-0 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/30 dark:ring-white/10 rounded-full shadow-inner dark:shadow-black/10 relative"
-				)}
-			>
-				<motion.div
-					animate={{
-						x: theme === "light" ? 4 : theme === "system" ? 24 : 40,
-						transition: { duration: 0.1, easings: ["easeInOut"] },
-					}}
-					className="rounded-full size-8 relative"
-				>
-					<motion.div
-						className="size-8 absolute top-0 left-0"
-						variants={iconVariants}
-						initial="hidden"
-						animate={controlsSun}
-					>
-						<SunMedium className="size-8" />
-					</motion.div>
-					<motion.div
-						className="size-8 absolute top-0 left-0"
-						variants={iconVariants}
-						initial="hidden"
-						animate={controlsContrast}
-					>
-						<SunMoon className="size-8 dark:rotate-180" />
-					</motion.div>
-					<motion.div
-						className="size-8 absolute top-0 left-0"
-						variants={iconVariants}
-						initial="hidden"
-						animate={controlsMoon}
-					>
-						<Moon className="size-8" />
-					</motion.div>
-				</motion.div>
-			</motion.div>
-		</button>
-	);
+  return (
+    <button
+      onClick={toggleTheme}
+      className={cn(
+        "p-2 rounded-lg transition-all duration-200",
+        "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+        "focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600"
+      )}
+      aria-label="Toggle theme"
+    >
+      <div className="relative w-6 h-6">{getIcon()}</div>
+    </button>
+  );
 }
