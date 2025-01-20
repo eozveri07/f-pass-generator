@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tag, Group } from "./types";
+import { useTheme } from "next-themes";
 
 interface FilterProps {
   tags: Tag[];
@@ -25,6 +30,16 @@ export function PasswordFilter({
   onFilterChange,
 }: FilterProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { theme } = useTheme();
+
+  const getPreviewTextColor = (bgColor: string) => {
+    const hex = bgColor.replace("#", "");
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? "#000000" : "#ffffff";
+  };
 
   useEffect(() => {
     const validTags = selectedTags.filter((tagId) =>
@@ -40,7 +55,6 @@ export function PasswordFilter({
     if (validGroups.length !== selectedGroups.length) {
       onFilterChange("groups", validGroups);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tags, groups]);
 
   const handleTagChange = (tagId: string) => {
@@ -74,6 +88,7 @@ export function PasswordFilter({
         </PopoverTrigger>
         <PopoverContent className="w-[350px] p-4">
           <div className="grid grid-cols-2 gap-6">
+            {/* Groups Section */}
             <div>
               <h4 className="text-sm font-medium mb-3">Groups</h4>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-3">
@@ -92,11 +107,20 @@ export function PasswordFilter({
                     </label>
                   </div>
                 ))}
+                {groups.length === 0 && (
+                  <div className="text-sm text-muted-foreground py-1">
+                    No groups available
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* Tags Section */}
             <div className="relative">
-              <Separator orientation="vertical" className="absolute -left-3 h-full" />
+              <Separator
+                orientation="vertical"
+                className="absolute -left-3 h-full"
+              />
               <h4 className="text-sm font-medium mb-3">Tags</h4>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-3">
                 {tags.map((tag) => (
@@ -110,12 +134,23 @@ export function PasswordFilter({
                       htmlFor={`tag-${tag._id}`}
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      <Badge style={{ backgroundColor: tag.color }}>
+                      <Badge
+                        style={{
+                          backgroundColor: tag.color,
+                          color: getPreviewTextColor(tag.color),
+                          padding: "0.25rem 0.5rem",
+                        }}
+                      >
                         {tag.name}
                       </Badge>
                     </label>
                   </div>
                 ))}
+                {tags.length === 0 && (
+                  <div className="text-sm text-muted-foreground py-1">
+                    No tags available
+                  </div>
+                )}
               </div>
             </div>
           </div>
