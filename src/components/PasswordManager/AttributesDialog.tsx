@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Tag, Group } from "./types";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Settings2, Edit } from "lucide-react";
+import { Trash2, Settings2, Edit, AlertCircle } from "lucide-react";
 
 interface AttributeStats {
   tags: Record<string, number>; // tag id -> password count
@@ -63,8 +63,8 @@ export function AttributesDialog() {
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Veriler yüklenirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while loading data",
         variant: "destructive",
       });
     }
@@ -94,15 +94,16 @@ export function AttributesDialog() {
       if (response.ok) {
         await fetchAttributesAndStats();
         resetForm();
+        window.dispatchEvent(new Event('attributesUpdated')); 
         toast({
-          title: "Başarılı",
-          description: "Etiket eklendi",
+          title: "Success",
+          description: "Tag added",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Etiket eklenirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while adding the tag",
         variant: "destructive",
       });
     }
@@ -123,16 +124,17 @@ export function AttributesDialog() {
 
       if (response.ok) {
         await fetchAttributesAndStats();
+        window.dispatchEvent(new Event('attributesUpdated'));
         resetForm();
         toast({
-          title: "Başarılı",
-          description: "Etiket güncellendi",
+          title: "Success",
+          description: "Tag updated",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Etiket güncellenirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while updating the tag",
         variant: "destructive",
       });
     }
@@ -147,15 +149,16 @@ export function AttributesDialog() {
       if (response.ok) {
         setTags(prev => prev.filter(tag => tag._id !== id));
         await fetchAttributesAndStats();
+        window.dispatchEvent(new Event('attributesUpdated'));
         toast({
-          title: "Başarılı",
-          description: "Etiket silindi",
+          title: "Success",
+          description: "Tag deleted",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Etiket silinirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while deleting the tag",
         variant: "destructive",
       });
     }
@@ -183,16 +186,17 @@ export function AttributesDialog() {
   
       if (response.ok) {
         await fetchAttributesAndStats();
+        window.dispatchEvent(new Event('attributesUpdated'));
         resetForm();
         toast({
-          title: "Başarılı",
-          description: "Grup eklendi",
+          title: "Success",
+          description: "Group added",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Grup eklenirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while adding the group",
         variant: "destructive",
       });
     }
@@ -213,20 +217,31 @@ export function AttributesDialog() {
   
       if (response.ok) {
         await fetchAttributesAndStats();
+        window.dispatchEvent(new Event('attributesUpdated'));
         resetForm();
         toast({
-          title: "Başarılı",
-          description: "Grup güncellendi",
+          title: "Success",
+          description: "Group updated",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Grup güncellenirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while updating the group",
         variant: "destructive",
       });
     }
   };
+
+  const getPreviewTextColor = (bgColor: string) => {
+    const hex = bgColor.replace('#', '');
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
+  };
+
   
   const handleDeleteGroup = async (id: string) => {
     try {
@@ -237,15 +252,16 @@ export function AttributesDialog() {
       if (response.ok) {
         setGroups(prev => prev.filter(group => group._id !== id));
         await fetchAttributesAndStats();
+        window.dispatchEvent(new Event('attributesUpdated'));
         toast({
-          title: "Başarılı",
-          description: "Grup silindi",
+          title: "Success",
+          description: "Group deleted",
         });
       }
     } catch (error) {
       toast({
-        title: "Hata",
-        description: "Grup silinirken hata oluştu",
+        title: "Error",
+        description: "An error occurred while deleting the group",
         variant: "destructive",
       });
     }
@@ -263,49 +279,59 @@ export function AttributesDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Settings2 className="h-4 w-4 mr-2" />
-          Nitelik Yönetimi
+        <Button variant="outline" className="gap-2">
+          <Settings2 className="h-4 w-4" />
+          Manage Attributes
         </Button>
       </DialogTrigger>
-      <DialogContent className="min-w-[600px]">
+      <DialogContent className="min-w-[300px] max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Nitelik Yönetimi</DialogTitle>
+          <DialogTitle>Manage Attributes</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full">
-            <TabsTrigger value="tags" className="w-full">Etiketler</TabsTrigger>
-            <TabsTrigger value="groups" className="w-full">Gruplar</TabsTrigger>
+            <TabsTrigger value="tags" className="w-full">Tags</TabsTrigger>
+            <TabsTrigger value="groups" className="w-full">Groups</TabsTrigger>
           </TabsList>
 
           <TabsContent value="tags">
-            <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-              <TabsList>
-                <TabsTrigger value="list">Listele</TabsTrigger>
-                <TabsTrigger value="manage">
-                  {editMode ? 'Düzenle' : 'Ekle'}
-                </TabsTrigger>
-              </TabsList>
+            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+              <div className="flex justify-center w-full mb-4">
+                <TabsList className="w-[400px]">
+                  <TabsTrigger value="list" className="w-full">List</TabsTrigger>
+                  <TabsTrigger value="manage" className="w-full">
+                    {editMode ? 'Edit' : 'Add'}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value="list" className="space-y-4">
+              <TabsContent value="list">
                 <div className="grid gap-2">
                   {tags.map((tag) => (
                     <div key={tag._id} 
-                         className="flex items-center justify-between p-2 border rounded-md">
-                      <div className="flex items-center gap-2">
-                        <Badge style={{ backgroundColor: tag.color }}>
+                         className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Badge 
+                          style={{ 
+                            backgroundColor: tag.color,
+                            color: getPreviewTextColor(tag.color),
+                            padding: '0.5rem 0.75rem'
+                          }}
+                          className="text-sm font-medium"
+                        >
                           {tag.name}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          ({stats.tags[tag._id] || 0} şifre)
+                          {stats.tags[tag._id] || 0} passwords
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditClick(tag)}
+                          className="hover:bg-accent"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -313,136 +339,182 @@ export function AttributesDialog() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteTag(tag._id)}
+                          className="hover:bg-destructive hover:text-destructive-foreground"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   ))}
+                  {tags.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertCircle className="mx-auto h-8 w-8 mb-2" />
+                      <p>No tags have been added yet</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="manage">
                 <div className="space-y-4">
-                  <Input
-                    placeholder="Etiket adı"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                  />
-                  <div className="flex gap-2 items-center">
-                    <span>Renk:</span>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tag Name</label>
                     <Input
-                      type="color"
-                      value={newTagColor}
-                      onChange={(e) => setNewTagColor(e.target.value)}
-                      className="w-20"
+                      placeholder="Enter tag name"
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
                     />
                   </div>
-                  <Button 
-                    onClick={editMode ? handleUpdateTag : handleAddTag}
-                    className="w-full"
-                  >
-                    {editMode ? 'Güncelle' : 'Ekle'}
-                  </Button>
-                  {editMode && (
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tag Color</label>
+                    <div className="flex gap-4 items-center">
+                      <Input
+                        type="color"
+                        value={newTagColor}
+                        onChange={(e) => setNewTagColor(e.target.value)}
+                        className="w-24 h-10 p-1 cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <Badge 
+                          className="w-full py-2 justify-center"
+                          style={{ 
+                            backgroundColor: newTagColor,
+                            color: getPreviewTextColor(newTagColor)
+                          }}
+                        >
+                          Preview: {newTagName || 'Tag Name'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-4">
                     <Button 
-                      variant="outline"
-                      onClick={() => {
-                        resetForm();
-                        setActiveSubTab("list"); // İptal edilince listeye dön
-                      }}
+                      onClick={editMode ? handleUpdateTag : handleAddTag}
                       className="w-full"
+                      disabled={!newTagName.trim()}
                     >
-                      İptal
+                      {editMode ? 'Update' : 'Add'}
                     </Button>
-                  )}
+                    {editMode && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          resetForm();
+                          setActiveSubTab("list");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
           </TabsContent>
 
           <TabsContent value="groups">
-  <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-    <TabsList>
-      <TabsTrigger value="list">Listele</TabsTrigger>
-      <TabsTrigger value="manage">
-        {editMode ? 'Düzenle' : 'Ekle'}
-      </TabsTrigger>
-    </TabsList>
+            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+              <div className="flex justify-center w-full mb-4">
+                <TabsList className="w-[400px]">
+                  <TabsTrigger value="list" className="w-full">List</TabsTrigger>
+                  <TabsTrigger value="manage" className="w-full">
+                    {editMode ? 'Edit' : 'Add'}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-    <TabsContent value="list" className="space-y-4">
-      <div className="grid gap-2">
-        {groups.map((group) => (
-          <div key={group._id} 
-               className="flex items-center justify-between p-2 border rounded-md">
-            <div>
-              <div className="font-medium">{group.name}</div>
-              {group.description && (
-                <div className="text-sm text-muted-foreground">
-                  {group.description}
+              <TabsContent value="list">
+                <div className="grid gap-2">
+                  {groups.map((group) => (
+                    <div key={group._id} 
+                         className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+                      <div className="space-y-1">
+                        <div className="font-medium">{group.name}</div>
+                        {group.description && (
+                          <div className="text-sm text-muted-foreground">
+                            {group.description}
+                          </div>
+                        )}
+                        <div className="text-sm text-muted-foreground">
+                          {stats.groups[group._id] || 0} passwords
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditGroup(group)}
+                          className="hover:bg-accent"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteGroup(group._id)}
+                          className="hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {groups.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertCircle className="mx-auto h-8 w-8 mb-2" />
+                      <p>No groups have been added yet</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              <span className="text-sm text-muted-foreground">
-                ({stats.groups[group._id] || 0} şifre)
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditGroup(group)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDeleteGroup(group._id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </TabsContent>
+              </TabsContent>
 
-    <TabsContent value="manage">
-      <div className="space-y-4">
-        <Input
-          placeholder="Grup adı"
-          value={newGroupName}
-          onChange={(e) => setNewGroupName(e.target.value)}
-        />
-        <Input
-          placeholder="Açıklama"
-          value={newGroupDesc}
-          onChange={(e) => setNewGroupDesc(e.target.value)}
-        />
-        <Button 
-          onClick={editMode ? handleUpdateGroup : handleAddGroup}
-          className="w-full"
-        >
-          {editMode ? 'Güncelle' : 'Ekle'}
-        </Button>
-        {editMode && (
-          <Button 
-            variant="outline"
-            onClick={() => {
-              resetForm();
-              setActiveSubTab("list");
-            }}
-            className="w-full"
-          >
-            İptal
-          </Button>
-        )}
-      </div>
-    </TabsContent>
-  </Tabs>
-</TabsContent>
-</Tabs>
+              <TabsContent value="manage">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Group Name</label>
+                    <Input
+                      placeholder="Enter group name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Description</label>
+                    <Input
+                      placeholder="Enter group description"
+                      value={newGroupDesc}
+                      onChange={(e) => setNewGroupDesc(e.target.value)}
+                    />
+                  </div>
 
+                  <div className="flex flex-col gap-2 pt-4">
+                    <Button 
+                      onClick={editMode ? handleUpdateGroup : handleAddGroup}
+                      className="w-full"
+                      disabled={!newGroupName.trim()}
+                    >
+                      {editMode ? 'Update' : 'Add'}
+                    </Button>
+                    {editMode && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          resetForm();
+                          setActiveSubTab("list");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
