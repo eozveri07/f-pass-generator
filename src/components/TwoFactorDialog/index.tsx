@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogTrigger,
   DialogTitle,
+  DialogHeader,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { TwoFactorSetup } from "@/components/2fa";
@@ -183,78 +184,59 @@ export function TwoFactorDialog() {
   );
 
   const renderUnlockedStatus = () => (
-    <Card>
-      <CardHeader>
+    <div className="space-y-4">
+      <DialogHeader>
         <div className="flex items-center justify-between">
           <DialogTitle>2FA Status</DialogTitle>
-          <span className="text-sm text-green-500 font-medium">
+          <span className="text-sm text-green-500 font-medium mt-4">
             {formatTime(remainingTime)} remaining
           </span>
         </div>
         <DialogDescription>
           Your 2FA is currently active and unlocked
         </DialogDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center justify-center p-4">
-            <ShieldCheck className="h-16 w-16 text-green-500" />
-          </div>
-          <Progress value={(remainingTime / 300) * 100} className="h-2" />
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-center p-4">
+          <ShieldCheck className="h-16 w-16 text-green-500" />
         </div>
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
-        <div className="grid grid-cols-2 gap-4 w-full">
-          <Button
-            variant="outline"
-            onClick={() => handleAction("lock")}
-            className="w-full"
-          >
-            <ShieldAlert className="h-4 w-4 mr-2" />
-            Lock Now
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => handleAction("disable")}
-            disabled={isLoading}
-            className="w-full"
-          >
-            <ShieldMinus className="h-4 w-4 mr-2" />
-            Remove 2FA
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+        <Progress value={(remainingTime / 300) * 100} className="h-2" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 w-full pt-4">
+        <Button
+          variant="outline"
+          onClick={() => handleAction("lock")}
+          className="w-full"
+        >
+          <ShieldAlert className="h-4 w-4 mr-2" />
+          Lock Now
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => handleAction("disable")}
+          disabled={isLoading}
+          className="w-full"
+        >
+          <ShieldMinus className="h-4 w-4 mr-2" />
+          Remove 2FA
+        </Button>
+      </div>
+    </div>
   );
 
   const renderLockedStatus = () => (
-    <Card>
-      <CardHeader>
+    <div className="space-y-4">
+      <DialogHeader>
         <DialogTitle>2FA Management</DialogTitle>
         <DialogDescription>
           Unlock 2FA to manage your settings
         </DialogDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">{renderUnlockSection()}</CardContent>
-    </Card>
+      </DialogHeader>
+      {renderUnlockSection()}
+    </div>
   );
-
-  const renderDialogContent = () => {
-    if (!twoFactorStatus?.enabled) {
-      return (
-        <TwoFactorSetup
-          onSuccess={() => {
-            setIsDialogOpen(false);
-            fetchTwoFactorStatus();
-          }}
-        />
-      );
-    }
-
-    return twoFactorStatus.isUnlocked
-      ? renderUnlockedStatus()
-      : renderLockedStatus();
-  };
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -263,7 +245,7 @@ export function TwoFactorDialog() {
           variant="outline"
           className={`${
             twoFactorStatus?.isUnlocked
-              ? "bg-green-50 hover:bg-green-100 border-green-200"
+              ? "bg-green-50 hover:bg-green-100 border-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:border-green-900/50 dark:text-green-400"
               : ""
           }`}
         >
@@ -271,11 +253,24 @@ export function TwoFactorDialog() {
           {!twoFactorStatus?.enabled
             ? "Setup 2FA"
             : twoFactorStatus.isUnlocked
-            ? "2FA Active"
+            ? "2FA Open"
             : "Unlock 2FA"}
         </Button>
       </DialogTrigger>
-      <DialogContent>{renderDialogContent()}</DialogContent>
+      <DialogContent>
+        {!twoFactorStatus?.enabled ? (
+          <TwoFactorSetup
+            onSuccess={() => {
+              setIsDialogOpen(false);
+              fetchTwoFactorStatus();
+            }}
+          />
+        ) : twoFactorStatus.isUnlocked ? (
+          renderUnlockedStatus()
+        ) : (
+          renderLockedStatus()
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
