@@ -16,7 +16,6 @@ import { Plus, Search } from "lucide-react";
 import { Group, Password, Tag } from "./types";
 import { PasswordForm } from "./PasswordForm";
 import { PasswordTable } from "./PasswordTable";
-import { TotpDialog } from "./TotpDialog";
 import { ClientCrypto } from "@/lib/client-crypto";
 import Cookies from "js-cookie";
 import { TwoFactorDialog } from "../TwoFactorDialog";
@@ -29,19 +28,14 @@ export default function PasswordManager() {
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
-const [groups, setGroups] = useState<Group[]>([]);
-const [selectedTags, setSelectedTags] = useState<string[]>([]);
-const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedPassword, setSelectedPassword] = useState<Password | null>(
     null
   );
   const [masterPassword, setMasterPassword] = useState("");
-  const [totpDialog, setTotpDialog] = useState({
-    isOpen: false,
-    passwordId: null as string | null,
-    action: null as "view" | "delete" | null,
-  });
 
   const { toast } = useToast();
   const fetchAttributesAndStats = useCallback(async () => {
@@ -50,7 +44,7 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
         fetch("/api/tags"),
         fetch("/api/groups"),
       ]);
-      
+
       if (tagsRes.ok && groupsRes.ok) {
         const [tagsData, groupsData] = await Promise.all([
           tagsRes.json(),
@@ -85,6 +79,33 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     }
   }, [toast]);
 
+  const [twoFactorStatus, setTwoFactorStatus] = useState({
+    enabled: false,
+    isUnlocked: false,
+  });
+
+  // 2FA durumunu kontrol eden fonksiyon
+  const check2FAStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/2fa/status");
+      if (response.ok) {
+        const data = await response.json();
+        setTwoFactorStatus({
+          enabled: data.enabled,
+          isUnlocked: data.isUnlocked,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking 2FA status:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    check2FAStatus();
+    const interval = setInterval(check2FAStatus, 3000);
+    return () => clearInterval(interval);
+  }, [check2FAStatus]);
+
   useEffect(() => {
     const masterKeyHash = Cookies.get("master_key");
     if (masterKeyHash) {
@@ -92,20 +113,19 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
       fetchPasswords();
       fetchAttributesAndStats();
     }
-  
+
     // Event listener ekleyelim
     const handleAttributeUpdate = () => {
       fetchAttributesAndStats();
     };
-  
-    window.addEventListener('attributesUpdated', handleAttributeUpdate);
-  
+
+    window.addEventListener("attributesUpdated", handleAttributeUpdate);
+
     // Cleanup
     return () => {
-      window.removeEventListener('attributesUpdated', handleAttributeUpdate);
+      window.removeEventListener("attributesUpdated", handleAttributeUpdate);
     };
   }, [fetchPasswords, fetchAttributesAndStats]);
-  
 
   const handleAddPassword = async (passwordData: Partial<Password>) => {
     if (!masterPassword) {
@@ -141,14 +161,13 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     }
   };
 
-  const handleFilterChange = (type: 'tags' | 'groups', ids: string[]) => {
-    if (type === 'tags') {
+  const handleFilterChange = (type: "tags" | "groups", ids: string[]) => {
+    if (type === "tags") {
       setSelectedTags(ids);
     } else {
       setSelectedGroups(ids);
     }
   };
-
 
   const handleEditPassword = async (passwordData: Partial<Password>) => {
     if (!selectedPassword || !masterPassword) return;
@@ -212,6 +231,18 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     const password = passwords.find((p) => p._id === id);
     if (!password) return;
 
+    if (
+      password.requires2FA &&
+      (!twoFactorStatus.enabled || !twoFactorStatus.isUnlocked)
+    ) {
+      toast({
+        title: "Error",
+        description: "System is locked. Please unlock 2FA first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const decrypted = await ClientCrypto.decrypt({
         encryptedData: password.encryptedData,
@@ -261,7 +292,7 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
 
       await navigator.clipboard.writeText(decrypted);
       const response = await fetch(`/api/passwords/${id}`, {
-        method: "PATCH",
+        method: "PUT",
       });
 
       if (!response.ok) throw new Error("Failed to update copy date");
@@ -281,60 +312,30 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
     }
   };
 
-  const verifyTotpAndProcess = async (
-    passwordId: string,
-    code: string,
-    action: "view" | "delete"
-  ) => {
-    try {
-      const verifyResponse = await fetch("/api/passwords/verify-totp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: code,
-          passwordId,
-        }),
-      });
-
-      if (!verifyResponse.ok) {
-        throw new Error("Invalid code");
-      }
-
-      if (action === "delete") {
-        await handleDelete(passwordId);
-      }
-
-      setTotpDialog({ isOpen: false, passwordId: null, action: null });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Invalid verification code",
-        variant: "destructive",
-      });
-    }
-  };
-
   const filteredPasswords = passwords.filter((password) => {
-    // Arama filtrelemesi
     const matchesSearch = searchTerm
       ? password.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         password.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         password.url?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         password.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-  
-    // Tag filtrelemesi
+
     const matchesTags =
       selectedTags.length === 0 ||
-      (password.tags && password.tags.some(tag => selectedTags.includes(tag._id)));
-  
-    // Group filtrelemesi
+      (password.tags &&
+        password.tags.some((tag) => selectedTags.includes(tag._id)));
+
     const matchesGroups =
       selectedGroups.length === 0 ||
       (password.groupId && selectedGroups.includes(password.groupId._id));
-  
-    return matchesSearch && matchesTags && matchesGroups;
+
+    const matches2FA =
+      !password.requires2FA ||
+      (twoFactorStatus.enabled && twoFactorStatus.isUnlocked);
+
+    return matchesSearch && matchesTags && matchesGroups && matches2FA;
   });
+
   if (loading) {
     return <div className="text-center py-4">Loading passwords...</div>;
   }
@@ -342,24 +343,24 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-between items-center">
-      <div className="flex items-center space-x-2">
-  <div className="relative">
-    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-    <Input
-      placeholder="Search passwords..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="w-64 pl-8"
-    />
-  </div>
-  <PasswordFilter
-    tags={tags}
-    groups={groups}
-    selectedTags={selectedTags}
-    selectedGroups={selectedGroups}
-    onFilterChange={handleFilterChange}
-  />
-</div>
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Input
+              placeholder="Search passwords..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64 pl-8"
+            />
+          </div>
+          <PasswordFilter
+            tags={tags}
+            groups={groups}
+            selectedTags={selectedTags}
+            selectedGroups={selectedGroups}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
         <div className="flex items-center space-x-2">
           <TwoFactorDialog />
           <AttributesDialog />
@@ -394,13 +395,7 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
         onCopyPassword={copyToClipboard}
         onEdit={setSelectedPassword}
         onDelete={handleDelete}
-        onTotpRequest={(id, action) =>
-          setTotpDialog({
-            isOpen: true,
-            passwordId: id,
-            action,
-          })
-        }
+        systemLocked={!twoFactorStatus.isUnlocked}
       />
 
       <Dialog
@@ -424,14 +419,6 @@ const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
           )}
         </DialogContent>
       </Dialog>
-
-      <TotpDialog
-        dialogState={totpDialog}
-        onClose={() =>
-          setTotpDialog({ isOpen: false, passwordId: null, action: null })
-        }
-        onVerify={verifyTotpAndProcess}
-      />
     </div>
   );
 }

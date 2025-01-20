@@ -11,7 +11,7 @@ export interface Password {
   priorityLevel: 'low' | 'medium' | 'high';
   createdAt: string;
   updatedAt: string;
-  requiresTotp?: boolean;
+  requires2FA?: boolean; 
   groupId?: {
     _id: string;
     userId: string;
