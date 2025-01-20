@@ -21,6 +21,7 @@ import Cookies from "js-cookie";
 import { TwoFactorDialog } from "../TwoFactorDialog";
 import { AttributesDialog } from "./AttributesDialog";
 import { PasswordFilter } from "./PasswordFilter";
+import { useTwoFactor } from "@/contexts/TwoFactorContent";
 
 export default function PasswordManager() {
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -78,33 +79,6 @@ export default function PasswordManager() {
       setLoading(false);
     }
   }, [toast]);
-
-  const [twoFactorStatus, setTwoFactorStatus] = useState({
-    enabled: false,
-    isUnlocked: false,
-  });
-
-  // 2FA durumunu kontrol eden fonksiyon
-  const check2FAStatus = useCallback(async () => {
-    try {
-      const response = await fetch("/api/auth/2fa/status");
-      if (response.ok) {
-        const data = await response.json();
-        setTwoFactorStatus({
-          enabled: data.enabled,
-          isUnlocked: data.isUnlocked,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking 2FA status:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    check2FAStatus();
-    const interval = setInterval(check2FAStatus, 3000);
-    return () => clearInterval(interval);
-  }, [check2FAStatus]);
 
   useEffect(() => {
     const masterKeyHash = Cookies.get("master_key");
@@ -218,6 +192,8 @@ export default function PasswordManager() {
     }
   };
 
+  const { status: twoFactorStatus } = useTwoFactor();
+
   const handleTogglePassword = async (id: string) => {
     if (!masterPassword) {
       toast({
@@ -231,9 +207,10 @@ export default function PasswordManager() {
     const password = passwords.find((p) => p._id === id);
     if (!password) return;
 
+    // Burada kontrolleri status ile yapıyoruz
     if (
       password.requires2FA &&
-      (!twoFactorStatus.enabled || !twoFactorStatus.isUnlocked)
+      (!twoFactorStatus?.enabled || !twoFactorStatus?.isUnlocked)
     ) {
       toast({
         title: "Error",
@@ -331,7 +308,7 @@ export default function PasswordManager() {
 
     const matches2FA =
       !password.requires2FA ||
-      (twoFactorStatus.enabled && twoFactorStatus.isUnlocked);
+      (twoFactorStatus?.enabled && twoFactorStatus?.isUnlocked);
 
     return matchesSearch && matchesTags && matchesGroups && matches2FA;
   });
@@ -395,7 +372,7 @@ export default function PasswordManager() {
         onCopyPassword={copyToClipboard}
         onEdit={setSelectedPassword}
         onDelete={handleDelete}
-        systemLocked={!twoFactorStatus.isUnlocked}
+        systemLocked={!twoFactorStatus?.isUnlocked}
       />
 
       <Dialog

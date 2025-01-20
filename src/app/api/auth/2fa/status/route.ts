@@ -1,4 +1,3 @@
-// app/api/auth/2fa/status/route.ts
 import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
@@ -24,8 +23,8 @@ export async function GET() {
       (new Date().getTime() - new Date(user.twoFactorUnlockedAt).getTime()) < UNLOCK_DURATION
 
     return NextResponse.json({ 
-      enabled: !!user.twoFactorEnabled && !!user.twoFactorSecret, // Her iki koşulu da kontrol et
-      isUnlocked: isUnlocked && !!user.twoFactorEnabled // 2FA aktif değilse kilit durumunu false dön
+      enabled: !!user.twoFactorEnabled && !!user.twoFactorSecret, 
+      isUnlocked: isUnlocked && !!user.twoFactorEnabled 
     })
 
   } catch (error) {

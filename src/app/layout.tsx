@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { Toaster } from "@/components/ui/toaster";
 import { SessionProvider } from "next-auth/react";
+import { TwoFactorProvider } from "@/contexts/TwoFactorContent";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,7 +57,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <TwoFactorProvider pollInterval={10000}>
+              {children}
+            </TwoFactorProvider>
+          </SessionProvider>
           <Toaster />
           <TailwindIndicator />
         </ThemeProvider>
