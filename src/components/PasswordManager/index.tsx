@@ -54,7 +54,7 @@ export default function PasswordManager() {
         setTags(tagsData);
         setGroups(groupsData);
       }
-    } catch (error) {
+    } catch  {
       toast({
         title: "Hata",
         description: "Veriler yüklenirken hata oluştu",

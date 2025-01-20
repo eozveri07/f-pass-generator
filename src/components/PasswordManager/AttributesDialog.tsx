@@ -1,5 +1,4 @@
-// components/password/AttributesDialog.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,54 +20,54 @@ interface AttributeStats {
 }
 
 export function AttributesDialog() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [tags, setTags] = useState<Tag[]>([]);
-    const [groups, setGroups] = useState<Group[]>([]);
-    const [stats, setStats] = useState<AttributeStats>({ tags: {}, groups: {} });
-    const [newTagName, setNewTagName] = useState("");
-    const [newTagColor, setNewTagColor] = useState("#000000");
-    const [newGroupName, setNewGroupName] = useState("");
-    const [newGroupDesc, setNewGroupDesc] = useState("");
-    const [editMode, setEditMode] = useState(false);
-    const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
-    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-    const [activeTab, setActiveTab] = useState("tags");
-    const [activeSubTab, setActiveSubTab] = useState("list");
-  
+  const [isOpen, setIsOpen] = useState(false);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [stats, setStats] = useState<AttributeStats>({ tags: {}, groups: {} });
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#000000");
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [activeTab, setActiveTab] = useState("tags");
+  const [activeSubTab, setActiveSubTab] = useState("list");
+
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchAttributesAndStats();
-    }
-  }, [isOpen]);
-
-  const fetchAttributesAndStats = async () => {
+  const fetchAttributesAndStats = useCallback(async () => {
     try {
       const [tagsRes, groupsRes, statsRes] = await Promise.all([
         fetch("/api/tags"),
         fetch("/api/groups"),
-        fetch("/api/attributes/stats")
+        fetch("/api/attributes/stats"),
       ]);
-      
+
       if (tagsRes.ok && groupsRes.ok && statsRes.ok) {
         const [tagsData, groupsData, statsData] = await Promise.all([
           tagsRes.json(),
           groupsRes.json(),
-          statsRes.json()
+          statsRes.json(),
         ]);
         setTags(tagsData);
         setGroups(groupsData);
         setStats(statsData);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while loading data",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchAttributesAndStats();
+    }
+  }, [isOpen, fetchAttributesAndStats]);
 
   const resetForm = () => {
     setNewTagName("");
@@ -87,20 +86,20 @@ export function AttributesDialog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newTagName,
-          color: newTagColor
+          color: newTagColor,
         }),
       });
 
       if (response.ok) {
         await fetchAttributesAndStats();
         resetForm();
-        window.dispatchEvent(new Event('attributesUpdated')); 
+        window.dispatchEvent(new Event("attributesUpdated"));
         toast({
           title: "Success",
           description: "Tag added",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while adding the tag",
@@ -118,20 +117,20 @@ export function AttributesDialog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newTagName,
-          color: newTagColor
+          color: newTagColor,
         }),
       });
 
       if (response.ok) {
         await fetchAttributesAndStats();
-        window.dispatchEvent(new Event('attributesUpdated'));
+        window.dispatchEvent(new Event("attributesUpdated"));
         resetForm();
         toast({
           title: "Success",
           description: "Tag updated",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while updating the tag",
@@ -147,15 +146,15 @@ export function AttributesDialog() {
       });
 
       if (response.ok) {
-        setTags(prev => prev.filter(tag => tag._id !== id));
+        setTags((prev) => prev.filter((tag) => tag._id !== id));
         await fetchAttributesAndStats();
-        window.dispatchEvent(new Event('attributesUpdated'));
+        window.dispatchEvent(new Event("attributesUpdated"));
         toast({
           title: "Success",
           description: "Tag deleted",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while deleting the tag",
@@ -169,9 +168,8 @@ export function AttributesDialog() {
     setNewTagName(tag.name);
     setNewTagColor(tag.color);
     setEditMode(true);
-    setActiveSubTab("manage"); 
+    setActiveSubTab("manage");
   };
-
 
   const handleAddGroup = async () => {
     try {
@@ -180,20 +178,20 @@ export function AttributesDialog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newGroupName,
-          description: newGroupDesc
+          description: newGroupDesc,
         }),
       });
-  
+
       if (response.ok) {
         await fetchAttributesAndStats();
-        window.dispatchEvent(new Event('attributesUpdated'));
+        window.dispatchEvent(new Event("attributesUpdated"));
         resetForm();
         toast({
           title: "Success",
           description: "Group added",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while adding the group",
@@ -201,30 +199,30 @@ export function AttributesDialog() {
       });
     }
   };
-  
+
   const handleUpdateGroup = async () => {
     if (!selectedGroup) return;
-  
+
     try {
       const response = await fetch(`/api/groups/${selectedGroup._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newGroupName,
-          description: newGroupDesc
+          description: newGroupDesc,
         }),
       });
-  
+
       if (response.ok) {
         await fetchAttributesAndStats();
-        window.dispatchEvent(new Event('attributesUpdated'));
+        window.dispatchEvent(new Event("attributesUpdated"));
         resetForm();
         toast({
           title: "Success",
           description: "Group updated",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while updating the group",
@@ -234,31 +232,30 @@ export function AttributesDialog() {
   };
 
   const getPreviewTextColor = (bgColor: string) => {
-    const hex = bgColor.replace('#', '');
+    const hex = bgColor.replace("#", "");
     const r = parseInt(hex.slice(0, 2), 16);
     const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 128 ? '#000000' : '#ffffff';
+    return brightness > 128 ? "#000000" : "#ffffff";
   };
 
-  
   const handleDeleteGroup = async (id: string) => {
     try {
       const response = await fetch(`/api/groups/${id}`, {
         method: "DELETE",
       });
-  
+
       if (response.ok) {
-        setGroups(prev => prev.filter(group => group._id !== id));
+        setGroups((prev) => prev.filter((group) => group._id !== id));
         await fetchAttributesAndStats();
-        window.dispatchEvent(new Event('attributesUpdated'));
+        window.dispatchEvent(new Event("attributesUpdated"));
         toast({
           title: "Success",
           description: "Group deleted",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred while deleting the group",
@@ -266,7 +263,7 @@ export function AttributesDialog() {
       });
     }
   };
-  
+
   const handleEditGroup = (group: Group) => {
     setSelectedGroup(group);
     setNewGroupName(group.name);
@@ -274,7 +271,6 @@ export function AttributesDialog() {
     setEditMode(true);
     setActiveSubTab("manage");
   };
-
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -291,17 +287,27 @@ export function AttributesDialog() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full">
-            <TabsTrigger value="tags" className="w-full">Tags</TabsTrigger>
-            <TabsTrigger value="groups" className="w-full">Groups</TabsTrigger>
+            <TabsTrigger value="tags" className="w-full">
+              Tags
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="w-full">
+              Groups
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tags">
-            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+            <Tabs
+              value={activeSubTab}
+              onValueChange={setActiveSubTab}
+              className="w-full"
+            >
               <div className="flex justify-center w-full mb-4">
                 <TabsList className="w-[400px]">
-                  <TabsTrigger value="list" className="w-full">List</TabsTrigger>
+                  <TabsTrigger value="list" className="w-full">
+                    List
+                  </TabsTrigger>
                   <TabsTrigger value="manage" className="w-full">
-                    {editMode ? 'Edit' : 'Add'}
+                    {editMode ? "Edit" : "Add"}
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -309,14 +315,16 @@ export function AttributesDialog() {
               <TabsContent value="list">
                 <div className="grid gap-2">
                   {tags.map((tag) => (
-                    <div key={tag._id} 
-                         className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+                    <div
+                      key={tag._id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors"
+                    >
                       <div className="flex items-center gap-3">
-                        <Badge 
-                          style={{ 
+                        <Badge
+                          style={{
                             backgroundColor: tag.color,
                             color: getPreviewTextColor(tag.color),
-                            padding: '0.5rem 0.75rem'
+                            padding: "0.5rem 0.75rem",
                           }}
                           className="text-sm font-medium"
                         >
@@ -365,7 +373,7 @@ export function AttributesDialog() {
                       onChange={(e) => setNewTagName(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Tag Color</label>
                     <div className="flex gap-4 items-center">
@@ -376,29 +384,29 @@ export function AttributesDialog() {
                         className="w-24 h-10 p-1 cursor-pointer"
                       />
                       <div className="flex-1">
-                        <Badge 
+                        <Badge
                           className="w-full py-2 justify-center"
-                          style={{ 
+                          style={{
                             backgroundColor: newTagColor,
-                            color: getPreviewTextColor(newTagColor)
+                            color: getPreviewTextColor(newTagColor),
                           }}
                         >
-                          Preview: {newTagName || 'Tag Name'}
+                          Preview: {newTagName || "Tag Name"}
                         </Badge>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2 pt-4">
-                    <Button 
+                    <Button
                       onClick={editMode ? handleUpdateTag : handleAddTag}
                       className="w-full"
                       disabled={!newTagName.trim()}
                     >
-                      {editMode ? 'Update' : 'Add'}
+                      {editMode ? "Update" : "Add"}
                     </Button>
                     {editMode && (
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={() => {
                           resetForm();
@@ -415,12 +423,18 @@ export function AttributesDialog() {
           </TabsContent>
 
           <TabsContent value="groups">
-            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+            <Tabs
+              value={activeSubTab}
+              onValueChange={setActiveSubTab}
+              className="w-full"
+            >
               <div className="flex justify-center w-full mb-4">
                 <TabsList className="w-[400px]">
-                  <TabsTrigger value="list" className="w-full">List</TabsTrigger>
+                  <TabsTrigger value="list" className="w-full">
+                    List
+                  </TabsTrigger>
                   <TabsTrigger value="manage" className="w-full">
-                    {editMode ? 'Edit' : 'Add'}
+                    {editMode ? "Edit" : "Add"}
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -428,8 +442,10 @@ export function AttributesDialog() {
               <TabsContent value="list">
                 <div className="grid gap-2">
                   {groups.map((group) => (
-                    <div key={group._id} 
-                         className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+                    <div
+                      key={group._id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/10 transition-colors"
+                    >
                       <div className="space-y-1">
                         <div className="font-medium">{group.name}</div>
                         {group.description && (
@@ -480,7 +496,7 @@ export function AttributesDialog() {
                       onChange={(e) => setNewGroupName(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Description</label>
                     <Input
@@ -491,15 +507,15 @@ export function AttributesDialog() {
                   </div>
 
                   <div className="flex flex-col gap-2 pt-4">
-                    <Button 
+                    <Button
                       onClick={editMode ? handleUpdateGroup : handleAddGroup}
                       className="w-full"
                       disabled={!newGroupName.trim()}
                     >
-                      {editMode ? 'Update' : 'Add'}
+                      {editMode ? "Update" : "Add"}
                     </Button>
                     {editMode && (
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={() => {
                           resetForm();

@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
 import { Password } from '@/models/password'
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     await dbConnect()
     const session = await auth()

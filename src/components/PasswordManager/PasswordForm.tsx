@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { ClientCrypto } from "@/lib/client-crypto";
 import { Password, Tag, Group } from "./types";
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
 import Cookies from "js-cookie";
 
 interface PasswordFormProps {
@@ -44,7 +43,6 @@ export function PasswordForm({
   const [selectedGroupId, setSelectedGroupId] =
     useState<string>(initialGroupId);
 
-  const { theme } = useTheme();
 
   const getPreviewTextColor = (bgColor: string) => {
     const hex = bgColor.replace("#", "");

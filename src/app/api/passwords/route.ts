@@ -7,6 +7,12 @@ import { TOTPService } from '@/lib/totp'
 import { Tag } from '@/models/tag'
 import { Group } from '@/models/group'
 
+// Define the query type
+interface PasswordQuery {
+  userId: string;
+  groupId?: string;
+  tags?: { $in: string[] };
+}
 
 export async function GET(req: Request) {
   try {
@@ -22,7 +28,7 @@ export async function GET(req: Request) {
     const groupId = searchParams.get('groupId')
     const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean)
 
-    let query: any = { userId: session.user.id }
+    const query: PasswordQuery = { userId: session.user.id }
 
     if (groupId) {
       query.groupId = groupId

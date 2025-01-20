@@ -12,7 +12,6 @@ import { Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tag, Group } from "./types";
-import { useTheme } from "next-themes";
 
 interface FilterProps {
   tags: Tag[];
@@ -30,7 +29,6 @@ export function PasswordFilter({
   onFilterChange,
 }: FilterProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { theme } = useTheme();
 
   const getPreviewTextColor = (bgColor: string) => {
     const hex = bgColor.replace("#", "");
@@ -55,7 +53,7 @@ export function PasswordFilter({
     if (validGroups.length !== selectedGroups.length) {
       onFilterChange("groups", validGroups);
     }
-  }, [tags, groups]);
+  }, [tags, groups, selectedTags, selectedGroups, onFilterChange]);
 
   const handleTagChange = (tagId: string) => {
     const newSelectedTags = selectedTags.includes(tagId)
