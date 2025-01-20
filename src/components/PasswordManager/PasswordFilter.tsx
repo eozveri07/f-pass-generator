@@ -14,46 +14,47 @@ interface FilterProps {
   groups: Group[];
   selectedTags: string[];
   selectedGroups: string[];
-  onFilterChange: (type: 'tags' | 'groups', ids: string[]) => void;
+  onFilterChange: (type: "tags" | "groups", ids: string[]) => void;
 }
 
 export function PasswordFilter({
-    tags,
-    groups,
-    selectedTags,
-    selectedGroups,
-    onFilterChange,
-  }: FilterProps) {
-    const [isOpen, setIsOpen] = useState(false);
-  
-    useEffect(() => {
-      const validTags = selectedTags.filter(tagId => 
-        tags.some(tag => tag._id === tagId)
-      );
-      if (validTags.length !== selectedTags.length) {
-        onFilterChange('tags', validTags);
-      }
-  
-      const validGroups = selectedGroups.filter(groupId => 
-        groups.some(group => group._id === groupId)
-      );
-      if (validGroups.length !== selectedGroups.length) {
-        onFilterChange('groups', validGroups);
-      }
-    }, [tags, groups]);
+  tags,
+  groups,
+  selectedTags,
+  selectedGroups,
+  onFilterChange,
+}: FilterProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const validTags = selectedTags.filter((tagId) =>
+      tags.some((tag) => tag._id === tagId)
+    );
+    if (validTags.length !== selectedTags.length) {
+      onFilterChange("tags", validTags);
+    }
+
+    const validGroups = selectedGroups.filter((groupId) =>
+      groups.some((group) => group._id === groupId)
+    );
+    if (validGroups.length !== selectedGroups.length) {
+      onFilterChange("groups", validGroups);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tags, groups]);
 
   const handleTagChange = (tagId: string) => {
     const newSelectedTags = selectedTags.includes(tagId)
-      ? selectedTags.filter(id => id !== tagId)
+      ? selectedTags.filter((id) => id !== tagId)
       : [...selectedTags, tagId];
-    onFilterChange('tags', newSelectedTags);
+    onFilterChange("tags", newSelectedTags);
   };
 
   const handleGroupChange = (groupId: string) => {
     const newSelectedGroups = selectedGroups.includes(groupId)
-      ? selectedGroups.filter(id => id !== groupId)
+      ? selectedGroups.filter((id) => id !== groupId)
       : [...selectedGroups, groupId];
-    onFilterChange('groups', newSelectedGroups);
+    onFilterChange("groups", newSelectedGroups);
   };
 
   const selectedFiltersCount = selectedTags.length + selectedGroups.length;
@@ -74,7 +75,7 @@ export function PasswordFilter({
         <PopoverContent className="w-[350px] p-4">
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium mb-3">Gruplar</h4>
+              <h4 className="text-sm font-medium mb-3">Groups</h4>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-3">
                 {groups.map((group) => (
                   <div key={group._id} className="flex items-center space-x-2">
@@ -93,10 +94,10 @@ export function PasswordFilter({
                 ))}
               </div>
             </div>
-            
+
             <div className="relative">
               <Separator orientation="vertical" className="absolute -left-3 h-full" />
-              <h4 className="text-sm font-medium mb-3">Etiketler</h4>
+              <h4 className="text-sm font-medium mb-3">Tags</h4>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-3">
                 {tags.map((tag) => (
                   <div key={tag._id} className="flex items-center space-x-2">
