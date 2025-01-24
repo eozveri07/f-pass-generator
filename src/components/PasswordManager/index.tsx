@@ -255,10 +255,8 @@ export default function PasswordManager() {
       });
       return;
     }
-
     const password = passwords.find((p) => p._id === id);
     if (!password) return;
-
     try {
       const decrypted = await ClientCrypto.decrypt({
         encryptedData: password.encryptedData,
@@ -266,14 +264,16 @@ export default function PasswordManager() {
         salt: password.salt,
         masterPassword: masterPassword,
       });
-
       await navigator.clipboard.writeText(decrypted);
-      const response = await fetch(`/api/passwords/${id}`, {
+  
+      await fetch(`/api/passwords/${id}/copy`, {
         method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'copy' }) 
       });
-
-      if (!response.ok) throw new Error("Failed to update copy date");
-
+  
       await fetchPasswords();
       toast({
         title: "Copied",
