@@ -13,7 +13,8 @@ async function getLocationInfo(ip: string) {
       country: data.countryCode || 'Unknown',
       timezone: data.timezone || 'UTC'
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Location info fetch failed:', error)
     return {
       city: 'Unknown',
       country: 'Unknown',
@@ -30,12 +31,12 @@ export async function GET() {
     if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
-
     const devices = await Device.find({ userId: session.user.id })
       .sort({ lastActive: -1 })
     
     return NextResponse.json(devices)
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('GET devices failed:', error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
@@ -56,7 +57,6 @@ export async function POST() {
     const deviceType = getUserDeviceType(userAgent)
     const locationInfo = await getLocationInfo(ip)
 
-    // Check for existing device with same browser and IP
     const existingDevice = await Device.findOne({
       userId: session.user.id,
       browser: browserInfo,
@@ -64,12 +64,10 @@ export async function POST() {
     })
 
     if (existingDevice) {
-      // Update last active time
       existingDevice.lastActive = new Date()
       existingDevice.isCurrentDevice = true
       await existingDevice.save()
       
-      // Set other devices as not current
       await Device.updateMany(
         { userId: session.user.id, _id: { $ne: existingDevice._id } },
         { isCurrentDevice: false }
@@ -78,7 +76,6 @@ export async function POST() {
       return NextResponse.json(existingDevice)
     }
 
-    // Create new device if none exists
     await Device.updateMany(
       { userId: session.user.id },
       { isCurrentDevice: false }
@@ -97,12 +94,12 @@ export async function POST() {
     })
 
     return NextResponse.json(device)
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('POST device failed:', error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
 
-// Oturumu sonlandır
 export async function DELETE(req: Request) {
   try {
     await dbConnect()
@@ -124,13 +121,13 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ message: "Device removed" })
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('DELETE device failed:', error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
 
 function getUserDeviceType(userAgent: string): string {
-  // Windows versions
   if (userAgent.includes("Windows")) {
     if (userAgent.includes("Windows NT 10.0")) return "Windows 11/10"
     if (userAgent.includes("Windows NT 6.3")) return "Windows 8.1"
@@ -139,7 +136,6 @@ function getUserDeviceType(userAgent: string): string {
     return "Windows"
   }
 
-  // macOS versions
   if (userAgent.includes("Mac OS X")) {
     const version = userAgent.match(/Mac OS X (\d+[._]\d+[._]\d+)/)?.[1]
     if (version) {
@@ -148,7 +144,6 @@ function getUserDeviceType(userAgent: string): string {
     return "macOS"
   }
 
-  // iOS devices
   if (userAgent.includes("iPhone")) {
     const version = userAgent.match(/iPhone OS (\d+_\d+)/)?.[1]
     if (userAgent.includes("iPhone14,")) return "iPhone 13 Series"
@@ -157,7 +152,6 @@ function getUserDeviceType(userAgent: string): string {
     return `iPhone (iOS ${version?.replace('_', '.')})`
   }
 
-  // Android devices
   if (userAgent.includes("Android")) {
     const version = userAgent.match(/Android (\d+\.?\d*)/)?.[1]
     const model = userAgent.match(/\((.+?)\)/)?.[1].split(';')[1]?.trim()

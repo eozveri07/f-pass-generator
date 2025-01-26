@@ -44,8 +44,6 @@ export async function PUT(
 
     let updateData: PasswordUpdateData = {}
 
-    const url = new URL(req.url)
-    const isCopyOperation = url.searchParams.has('copy')
     const body = await req.json()
 
     if (body.action === 'copy') {

@@ -6,7 +6,7 @@ import { Group } from '@/models/group'
 import { User } from '@/models/user'
 import dbConnect from '@/lib/mongoose'
 
-export async function DELETE(req: Request) {
+export async function DELETE() {
   try {
     const session = await auth()
     
