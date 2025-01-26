@@ -45,14 +45,18 @@ export async function POST() {
   try {
     await dbConnect()
     const session = await auth()
-    
-    if (!session?.user?.id) {
-      return new NextResponse("Unauthorized", { status: 401 })
-    }
+    if (!session?.user?.id) return new NextResponse("Unauthorized", { status: 401 })
 
     const headersList = headers()
     const userAgent = headersList.get("user-agent") || ""
-    const ip = headersList.get("x-forwarded-for")?.split(',')[0] || "unknown"
+    
+    const forwardedFor = headersList.get("x-forwarded-for")
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 
+               headersList.get("x-real-ip")?.trim() ||
+               headersList.get("x-client-ip")?.trim() ||
+               "unknown"
+
+
     const browserInfo = getBrowserInfo(userAgent)
     const deviceType = getUserDeviceType(userAgent)
     const locationInfo = await getLocationInfo(ip)
