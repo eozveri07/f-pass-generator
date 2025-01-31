@@ -18,10 +18,9 @@ const PasswordGenerator = () => {
   const [lowercase, setLowercase] = useState(true);
   const [numbers, setNumbers] = useState(true);
   const [symbols, setSymbols] = useState(true);
-  const [mode, setMode] = useState<"all" | "easy-to-say" | "easy-to-read">(
-    "all"
-  );
+  const [mode, setMode] = useState<"all" | "easy-to-say" | "easy-to-read">("all");
   const { toast } = useToast();
+
 
   const generatePassword = useCallback(() => {
     let charset = "";
@@ -70,14 +69,9 @@ const PasswordGenerator = () => {
       transition={{ duration: 0.5 }}
       className="max-w-3xl mx-auto p-8 sm:px-8 px-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl"
     >
-      <motion.h2
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center"
-      >
+      <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white text-center">
         Password Generator
-      </motion.h2>
+      </h2>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
