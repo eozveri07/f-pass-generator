@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +51,13 @@ export default function MyAccount() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <Link href="/admin">
+          <Button variant="ghost" className="hover:bg-accent">
+            ← Back to Dashboard
+          </Button>
+        </Link>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Account</CardTitle>
