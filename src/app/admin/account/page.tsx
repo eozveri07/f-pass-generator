@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -25,12 +25,29 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import Cookies from "js-cookie";
 import SecurityDevices from "@/components/Security";
 
 export default function MyAccount() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
+  const clearAllCookiesAndStorage = () => {
+    // Clear all cookies
+    const cookies = Cookies.get();
+    for (const cookie in cookies) {
+      Cookies.remove(cookie);
+    }
+
+    // Clear localStorage
+    localStorage.clear();
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+  };
 
   const handleDeleteAccount = async () => {
     try {
@@ -39,11 +56,34 @@ export default function MyAccount() {
         method: "DELETE",
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        // Clear all client-side data
+        clearAllCookiesAndStorage();
+        
+        // Show success toast
+        toast({
+          title: "Account Deleted",
+          description: "Your account and all associated data have been successfully deleted.",
+          duration: 5000,
+        });
+
+        // Sign out from next-auth
+        await signOut({ redirect: false });
+
+        // Redirect to login page
         router.push("/login");
+      } else {
+        throw new Error(data.message || "Failed to delete account");
       }
     } catch (error) {
       console.error("Failed to delete account:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -99,10 +139,15 @@ export default function MyAccount() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your
-                  account and remove all associated data.
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>This action cannot be undone. This will permanently delete:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Your account information</li>
+                    <li>All your saved passwords</li>
+                    <li>All your device records</li>
+                    <li>All associated data and settings</li>
+                  </ul>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -112,7 +157,7 @@ export default function MyAccount() {
                   disabled={isDeleting}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {isDeleting ? "Deleting..." : "Delete Account"}
+                  {isDeleting ? "Deleting..." : "Yes, Delete Everything"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
