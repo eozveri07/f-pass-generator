@@ -21,8 +21,13 @@ import { ArrowLeft } from "lucide-react";
 export default function MasterKeySetup() {
   const { data: session } = useSession();
   const [masterKeySalt, setMasterKey] = useState("");
+  const [confirmMasterKey, setConfirmMasterKey] = useState("");
+  const [reminder, setReminder] = useState("");
   const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [showReminderOption, setShowReminderOption] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -50,6 +55,38 @@ export default function MasterKeySetup() {
 
   const isDarkMode = resolvedTheme === "dark";
 
+  const handleSendReminder = async () => {
+    if (!session?.user?.email) return;
+    
+    setIsSendingReminder(true);
+    try {
+      const response = await fetch("/api/send-reminder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: session.user.email }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Reminder has been sent to your email",
+        });
+      } else {
+        throw new Error("Failed to send reminder");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send reminder",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingReminder(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -62,12 +99,21 @@ export default function MasterKeySetup() {
       return;
     }
 
+    if (isNewUser && masterKeySalt !== confirmMasterKey) {
+      toast({
+        title: "Error",
+        description: "Master keys do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (isNewUser) {
         const response = await fetch("/api/user/master-key", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ masterKeySalt }),
+          body: JSON.stringify({ masterKeySalt, reminder }),
         });
 
         if (response.ok) {
@@ -89,6 +135,14 @@ export default function MasterKeySetup() {
             Cookies.set("master_key", masterKey);
             router.push("/admin");
           } else {
+            setAttempts(prev => {
+              const newAttempts = prev + 1;
+              if (newAttempts >= 3) {
+                setShowReminderOption(true);
+              }
+              return newAttempts;
+            });
+            
             toast({
               title: "Error",
               description: "Invalid master key",
@@ -159,9 +213,48 @@ export default function MasterKeySetup() {
                   }}
                   className="text-center text-2xl tracking-widest"
                 />
+                {isNewUser && (
+                  <>
+                    <Input
+                      type="password"
+                      maxLength={6}
+                      placeholder="Confirm Master Key"
+                      value={confirmMasterKey}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        setConfirmMasterKey(value);
+                      }}
+                      className="text-center text-2xl tracking-widest"
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Reminder (Optional)"
+                      value={reminder}
+                      onChange={(e) => setReminder(e.target.value)}
+                      className="text-center"
+                    />
+                  </>
+                )}
                 <Button type="submit" className="w-full py-6 text-lg">
                   {isNewUser ? "Set Master Key" : "Continue"}
                 </Button>
+
+                {showReminderOption && !isNewUser && (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Forgot your master key?
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSendReminder}
+                      disabled={isSendingReminder}
+                      className="w-full"
+                    >
+                      {isSendingReminder ? "Sending..." : "Send Reminder to Email"}
+                    </Button>
+                  </div>
+                )}
               </form>
             </Card>
           </motion.div>

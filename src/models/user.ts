@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   emailVerified: Date,
   masterKeyHash: String,  
   masterKeySetAt: Date,   
+  masterKeyReminder: String,
   twoFactorEnabled: { type: Boolean, default: false },
   twoFactorSecret: String,
   twoFactorUnlockedAt: { type: Date, default: null }
