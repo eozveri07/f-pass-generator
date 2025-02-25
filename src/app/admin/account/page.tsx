@@ -71,7 +71,7 @@ export default function MyAccount() {
             <h4 className="text-sm font-medium">Account Type</h4>
             <div className="flex space-x-2">
               <Badge variant="secondary">Primary</Badge>
-              <Badge variant="outline">GitHub</Badge>
+              <Badge variant="outline">Google</Badge>
             </div>
           </div>
         </CardContent>
