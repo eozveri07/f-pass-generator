@@ -17,6 +17,7 @@ import { useTheme } from "next-themes";
 import { SpotlightPreview } from "@/components/Spotlight";
 import NavButton from "@/components/NavButton";
 import { ArrowLeft } from "lucide-react";
+import { VirtualKeyboard } from "@/components/VirtualKeyboard";
 
 export default function MasterKeySetup() {
   const { data: session } = useSession();
@@ -160,6 +161,18 @@ export default function MasterKeySetup() {
     }
   };
 
+  const handleKeyPress = (value: string) => {
+    if (!isNewUser) {
+      setMasterKey(value);
+    } else {
+      if (masterKeySalt.length < 6) {
+        setMasterKey(value);
+      } else if (confirmMasterKey.length < 6) {
+        setConfirmMasterKey(value);
+      }
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-100 via-pink-200 to-indigo-200 dark:from-gray-950 dark:via-indigo-950 dark:to-blue-900 blur-2xl transform scale-110"></div>
@@ -235,6 +248,15 @@ export default function MasterKeySetup() {
                     />
                   </>
                 )}
+
+                {!isNewUser && (
+                  <VirtualKeyboard
+                    onKeyPress={handleKeyPress}
+                    currentValue={masterKeySalt}
+                    maxLength={6}
+                  />
+                )}
+
                 <Button type="submit" className="w-full py-6 text-lg">
                   {isNewUser ? "Set Master Key" : "Continue"}
                 </Button>
