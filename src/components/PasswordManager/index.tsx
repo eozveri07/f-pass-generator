@@ -22,6 +22,7 @@ import { TwoFactorDialog } from "../TwoFactorDialog";
 import { AttributesDialog } from "./AttributesDialog";
 import { PasswordFilter } from "./PasswordFilter";
 import { useTwoFactor } from "@/contexts/TwoFactorContent";
+import { useProtectionKey } from "@/hooks/use-protection-key";
 
 export default function PasswordManager() {
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -37,8 +38,11 @@ export default function PasswordManager() {
     null
   );
   const [masterPassword, setMasterPassword] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
   const { toast } = useToast();
+  const { isReady, error, decrypt } = useProtectionKey();
+
   const fetchAttributesAndStats = useCallback(async () => {
     try {
       const [tagsRes, groupsRes] = await Promise.all([
@@ -81,11 +85,21 @@ export default function PasswordManager() {
   }, [toast]);
 
   useEffect(() => {
-    const masterKeyHash = Cookies.get("master_key");
-    if (masterKeyHash) {
-      setMasterPassword(masterKeyHash);
-      fetchPasswords();
-      fetchAttributesAndStats();
+    setIsMounted(true);
+    
+    // Yeni yaklaşım: protection_key cookie'sini kontrol et
+    const protectionKeyCookie = Cookies.get("protection_key");
+    if (protectionKeyCookie) {
+      try {
+        const { masterKey } = JSON.parse(protectionKeyCookie);
+        if (masterKey) {
+          setMasterPassword(masterKey);
+          fetchPasswords();
+          fetchAttributesAndStats();
+        }
+      } catch (err) {
+        console.error("Invalid protection key format:", err);
+      }
     }
 
     // Event listener ekleyelim
@@ -100,6 +114,11 @@ export default function PasswordManager() {
       window.removeEventListener("attributesUpdated", handleAttributeUpdate);
     };
   }, [fetchPasswords, fetchAttributesAndStats]);
+
+  // Hidrasyon hatalarını önlemek için
+  if (!isMounted) {
+    return null;
+  }
 
   const handleAddPassword = async (passwordData: Partial<Password>) => {
     if (!masterPassword) {
@@ -195,10 +214,10 @@ export default function PasswordManager() {
   const { status: twoFactorStatus } = useTwoFactor();
 
   const handleTogglePassword = async (id: string) => {
-    if (!masterPassword) {
+    if (!isReady) {
       toast({
         title: "Error",
-        description: "Please unlock your vault first",
+        description: "Protection key is not ready",
         variant: "destructive",
       });
       return;
@@ -221,12 +240,8 @@ export default function PasswordManager() {
     }
 
     try {
-      const decrypted = await ClientCrypto.decrypt({
-        encryptedData: password.encryptedData,
-        iv: password.iv,
-        salt: password.salt,
-        masterPassword: masterPassword,
-      });
+      // Yeni yaklaşım: useProtectionKey hook'unu kullan
+      const decrypted = await decrypt(password.encryptedData, password.iv);
 
       setPasswords((prev) =>
         prev.map((p) =>
@@ -237,33 +252,33 @@ export default function PasswordManager() {
         ...prev,
         [id]: !prev[id],
       }));
-    } catch {
+    } catch (err) {
+      console.error("Decryption error:", err);
       toast({
         title: "Error",
-        description: "Invalid master password",
+        description: "Failed to decrypt password",
         variant: "destructive",
       });
     }
   };
 
   const copyToClipboard = async (id: string) => {
-    if (!masterPassword) {
+    if (!isReady) {
       toast({
         title: "Error",
-        description: "Please unlock your vault first",
+        description: "Protection key is not ready",
         variant: "destructive",
       });
       return;
     }
+    
     const password = passwords.find((p) => p._id === id);
     if (!password) return;
+    
     try {
-      const decrypted = await ClientCrypto.decrypt({
-        encryptedData: password.encryptedData,
-        iv: password.iv,
-        salt: password.salt,
-        masterPassword: masterPassword,
-      });
+      // Yeni yaklaşım: useProtectionKey hook'unu kullan
+      const decrypted = await decrypt(password.encryptedData, password.iv);
+      
       await navigator.clipboard.writeText(decrypted);
   
       await fetch(`/api/passwords/${id}/copy`, {
@@ -280,7 +295,8 @@ export default function PasswordManager() {
         description: "Password copied to clipboard",
         duration: 2000,
       });
-    } catch {
+    } catch (err) {
+      console.error("Copy error:", err);
       toast({
         title: "Error",
         description: "Failed to copy password",
@@ -315,6 +331,14 @@ export default function PasswordManager() {
 
   if (loading) {
     return <div className="text-center py-4">Loading passwords...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-4 text-red-500">
+        Error: {error}. Please try refreshing the page or logging in again.
+      </div>
+    );
   }
 
   return (

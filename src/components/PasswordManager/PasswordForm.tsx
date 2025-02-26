@@ -16,6 +16,8 @@ import { ClientCrypto } from "@/lib/client-crypto";
 import { Password, Tag, Group } from "./types";
 import { cn } from "@/lib/utils";
 import Cookies from "js-cookie";
+import { useProtectionKey } from "@/hooks/use-protection-key";
+import { useToast } from "@/hooks/use-toast";
 
 interface PasswordFormProps {
   onSubmit: (data: Partial<Password>) => Promise<void>;
@@ -30,9 +32,11 @@ export function PasswordForm({
   buttonText = "Save",
   onCancel,
 }: PasswordFormProps) {
-  const masterPassword = Cookies.get("master_key");
   const [groups, setGroups] = useState<Group[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const { isReady, encrypt } = useProtectionKey();
+  const { toast } = useToast();
 
   // Initial tag value from initialData
   const initialTagId = initialData?.tags?.[0]?._id || "none";
@@ -54,6 +58,7 @@ export function PasswordForm({
   };
 
   useEffect(() => {
+    setIsMounted(true);
     const fetchAttributes = async () => {
       try {
         const [groupsRes, tagsRes] = await Promise.all([
@@ -75,16 +80,29 @@ export function PasswordForm({
     fetchAttributes();
   }, []);
 
+  // Hidrasyon hatalarını önlemek için
+  if (!isMounted) {
+    return null;
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!masterPassword) return;
+    
+    if (!isReady) {
+      toast({
+        title: "Error",
+        description: "Protection key is not ready",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const formData = new FormData(e.currentTarget);
-      const { encryptedData, iv, salt } = await ClientCrypto.encrypt(
-        formData.get("password") as string,
-        masterPassword
-      );
+      const password = formData.get("password") as string;
+      
+      // Yeni yaklaşım: useProtectionKey hook'unu kullan
+      const { encryptedData, iv, salt } = await encrypt(password);
 
       const foundGroup =
         selectedGroupId === "none"
@@ -127,6 +145,11 @@ export function PasswordForm({
       await onSubmit(passwordData);
     } catch (error) {
       console.error("Encryption failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to encrypt password",
+        variant: "destructive",
+      });
     }
   };
 
@@ -250,14 +273,14 @@ export function PasswordForm({
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="url">URL</Label>
+        <Label htmlFor="url">Website URL</Label>
         <Input id="url" name="url" defaultValue={initialData?.url} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="notes">Notes</Label>
         <Input id="notes" name="notes" defaultValue={initialData?.notes} />
       </div>
-      <div className="flex justify-end space-x-2">
+      <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
