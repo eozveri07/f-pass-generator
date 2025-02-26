@@ -42,8 +42,6 @@ export async function PUT(
       return new NextResponse("Password not found", { status: 404 })
     }
 
-    let updateData: PasswordUpdateData = {}
-
     const body = await req.json()
 
     if (body.action === 'copy') {
@@ -54,10 +52,8 @@ export async function PUT(
       ).populate('groupId').populate('tags')
 
       return NextResponse.json(updatedPassword)
-
     } else {
       // Regular update operation
-      const body = await req.json()
       const { 
         title, 
         username, 
@@ -77,7 +73,7 @@ export async function PUT(
       }
 
       // Build update data
-      updateData = {
+      let updateData: PasswordUpdateData = {
         title,
         username,
         url,
@@ -115,32 +111,38 @@ export async function PUT(
 
       // Validate tags if provided
       if (tags !== undefined) {
-        if (tags.length > 0) {
-          const validTags = await Tag.find({
-            _id: { $in: tags },
-            userId: session.user.id
-          })
-          if (validTags.length !== tags.length) {
-            return new NextResponse("Invalid tag ID(s)", { status: 400 })
+        // Eğer tags bir array değilse ve _id alanı varsa, bu bir obje demektir
+        if (Array.isArray(tags)) {
+          if (tags.length > 0) {
+            // Eğer tags içindeki elemanlar obje ise (_id alanı varsa)
+            if (tags[0]._id) {
+              const tagIds = tags.map(tag => tag._id);
+              updateData.tags = tagIds;
+            } else {
+              // Zaten ID listesi ise
+              updateData.tags = tags;
+            }
+          } else {
+            updateData.tags = [];
           }
+        } else {
+          updateData.tags = [];
         }
-        updateData.tags = tags
       }
+
+      // Perform the update
+      const updatedPassword = await Password.findByIdAndUpdate(
+        params.id,
+        { $set: updateData },
+        { new: true }
+      ).populate('groupId').populate('tags')
+
+      if (!updatedPassword) {
+        return new NextResponse("Failed to update password", { status: 500 })
+      }
+
+      return NextResponse.json(updatedPassword)
     }
-
-    // Perform the update
-    const updatedPassword = await Password.findByIdAndUpdate(
-      params.id,
-      { $set: updateData },
-      { new: true }
-    ).populate('groupId').populate('tags')
-
-    if (!updatedPassword) {
-      return new NextResponse("Failed to update password", { status: 500 })
-    }
-
-    return NextResponse.json(updatedPassword)
-
   } catch (error) {
     console.error('Error updating password:', error)
     return new NextResponse("Internal Server Error", { status: 500 })

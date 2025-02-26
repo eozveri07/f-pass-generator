@@ -455,7 +455,7 @@ export default function PasswordManager() {
           showPassword={showPassword}
           onTogglePassword={handleTogglePassword}
           onCopyPassword={(id) => copyToClipboard(id)}
-          onEdit={handleEditPassword}
+          onEdit={setSelectedPassword}
           onDelete={handleDelete}
           systemLocked={!twoFactorStatus?.isUnlocked && twoFactorStatus?.enabled}
         />
