@@ -169,9 +169,12 @@ export class ZeroKnowledgeCrypto {
         enc.encode(data)
       );
 
+      const salt = crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
+
       return {
         encryptedData: this.arrayBufferToBase64(encrypted),
-        iv: this.arrayBufferToBase64(iv.buffer)
+        iv: this.arrayBufferToBase64(iv.buffer),
+        salt: this.arrayBufferToBase64(salt.buffer)
       };
     } catch (error) {
       throw this.handleError("Encryption failed", error);
