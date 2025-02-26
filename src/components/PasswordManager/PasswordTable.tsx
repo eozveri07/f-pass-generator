@@ -34,7 +34,7 @@ interface PasswordTableProps {
   passwords: Password[];
   showPassword: Record<string, boolean>;
   onTogglePassword: (id: string) => void;
-  onCopyPassword: (id: string, password: string) => void;
+  onCopyPassword: (id: string) => void;
   onEdit: (password: Password) => void;
   onDelete: (id: string) => void;
   systemLocked?: boolean;
@@ -166,8 +166,7 @@ export function PasswordTable({
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        password.decryptedPassword &&
-                        onCopyPassword(password._id, password.decryptedPassword)
+                        onCopyPassword(password._id)
                       }
                       disabled={
                         systemLocked && password.priorityLevel === "high"

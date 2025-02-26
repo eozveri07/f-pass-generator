@@ -23,6 +23,14 @@ import { AttributesDialog } from "./AttributesDialog";
 import { PasswordFilter } from "./PasswordFilter";
 import { useTwoFactor } from "@/contexts/TwoFactorContent";
 import { useProtectionKey } from "@/hooks/use-protection-key";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 export default function PasswordManager() {
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -39,6 +47,10 @@ export default function PasswordManager() {
   );
   const [masterPassword, setMasterPassword] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [filterGroup, setFilterGroup] = useState("all");
+  const [filterTag, setFilterTag] = useState("all");
+  const [sortBy, setSortBy] = useState("title");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const { toast } = useToast();
   const { isReady, error, decrypt } = useProtectionKey();
@@ -281,12 +293,9 @@ export default function PasswordManager() {
       
       await navigator.clipboard.writeText(decrypted);
   
+      // Kopyalama API endpoint'ini güncelle
       await fetch(`/api/passwords/${id}/copy`, {
-        method: "PUT",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'copy' }) 
+        method: "PUT"
       });
   
       await fetchPasswords();
@@ -313,20 +322,17 @@ export default function PasswordManager() {
         password.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
-    const matchesTags =
-      selectedTags.length === 0 ||
-      (password.tags &&
-        password.tags.some((tag) => selectedTags.includes(tag._id)));
+    const matchesTag = filterTag === "all" || 
+      (password.tags && password.tags.some(tag => tag._id === filterTag));
 
-    const matchesGroups =
-      selectedGroups.length === 0 ||
-      (password.groupId && selectedGroups.includes(password.groupId._id));
+    const matchesGroup = filterGroup === "all" || 
+      (password.groupId && password.groupId._id === filterGroup);
 
     const matches2FA =
       !password.requires2FA ||
       (twoFactorStatus?.enabled && twoFactorStatus?.isUnlocked);
 
-    return matchesSearch && matchesTags && matchesGroups && matches2FA;
+    return matchesSearch && matchesTag && matchesGroup && matches2FA;
   });
 
   if (loading) {
@@ -342,62 +348,98 @@ export default function PasswordManager() {
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+        <h2 className="text-3xl font-bold tracking-tight">Password Manager</h2>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            Add Password
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="Search passwords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-8"
+              className="max-w-xs"
             />
+            <Select
+              value={filterGroup}
+              onValueChange={setFilterGroup}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group._id} value={group._id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filterTag}
+              onValueChange={setFilterTag}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Tags" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tags</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag._id} value={tag._id}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <PasswordFilter
-            tags={tags}
-            groups={groups}
-            selectedTags={selectedTags}
-            selectedGroups={selectedGroups}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="flex items-center gap-2">
+            <Select
+              value={sortBy}
+              onValueChange={setSortBy}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="title">Title</SelectItem>
+                <SelectItem value="username">Username</SelectItem>
+                <SelectItem value="createdAt">Created Date</SelectItem>
+                <SelectItem value="lastCopied">Last Copied</SelectItem>
+                <SelectItem value="priorityLevel">Priority</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            >
+              {sortOrder === "asc" ? (
+                <ArrowUpIcon className="h-4 w-4" />
+              ) : (
+                <ArrowDownIcon className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <TwoFactorDialog />
-          <AttributesDialog />
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Password
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Password</DialogTitle>
-                <DialogDescription>
-                  Add a new password to your secure vault.
-                </DialogDescription>
-              </DialogHeader>
-              <PasswordForm
-                onSubmit={handleAddPassword}
-                buttonText="Add Password"
-                onCancel={() => setIsAddDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
 
-      <PasswordTable
-        passwords={filteredPasswords}
-        showPassword={showPassword}
-        onTogglePassword={handleTogglePassword}
-        onCopyPassword={copyToClipboard}
-        onEdit={setSelectedPassword}
-        onDelete={handleDelete}
-        systemLocked={!twoFactorStatus?.isUnlocked}
-      />
+        <PasswordTable
+          passwords={filteredPasswords}
+          showPassword={showPassword}
+          onTogglePassword={handleTogglePassword}
+          onCopyPassword={(id) => copyToClipboard(id)}
+          onEdit={handleEditPassword}
+          onDelete={handleDelete}
+          systemLocked={!twoFactorStatus?.isUnlocked && twoFactorStatus?.enabled}
+        />
+      </div>
 
       <Dialog
         open={!!selectedPassword}
