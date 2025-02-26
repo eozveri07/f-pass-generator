@@ -352,9 +352,29 @@ export default function PasswordManager() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Password Manager</h2>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            Add Password
-          </Button>
+          <TwoFactorDialog />
+          <AttributesDialog />
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Password
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Password</DialogTitle>
+                <DialogDescription>
+                  Add a new password to your secure vault.
+                </DialogDescription>
+              </DialogHeader>
+              <PasswordForm
+                onSubmit={handleAddPassword}
+                buttonText="Add Password"
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

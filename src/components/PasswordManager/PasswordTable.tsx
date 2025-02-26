@@ -190,7 +190,13 @@ export function PasswordTable({
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:underline"
                     >
-                      {new URL(password.url).hostname}
+                      {(() => {
+                        try {
+                          return new URL(password.url).hostname;
+                        } catch (e) {
+                          return password.url;
+                        }
+                      })()}
                     </a>
                   )}
                 </TableCell>
