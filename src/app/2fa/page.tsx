@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,20 +8,19 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import Cookies from "js-cookie";
-import { checkMasterKeySalt } from "@/app/actions/user";
 import { useSession } from "next-auth/react";
-import { ClientCrypto } from "@/lib/client-crypto";
+import { useTheme } from "next-themes";
 import ThemeAwareLogo from "@/components/Logo";
 import { ThemeToggle } from "@/components/mode-toggle";
-import { useTheme } from "next-themes";
 import { SpotlightPreview } from "@/components/Spotlight";
 import NavButton from "@/components/NavButton";
 import { ArrowLeft } from "lucide-react";
 import { VirtualKeyboard } from "@/components/VirtualKeyboard";
+import { ZeroKnowledgeCrypto } from "@/lib/zero-knowledge-crypto";
 
 export default function MasterKeySetup() {
   const { data: session } = useSession();
-  const [masterKeySalt, setMasterKey] = useState("");
+  const [masterKey, setMasterKey] = useState("");
   const [confirmMasterKey, setConfirmMasterKey] = useState("");
   const [reminder, setReminder] = useState("");
   const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
@@ -29,30 +28,50 @@ export default function MasterKeySetup() {
   const [attempts, setAttempts] = useState(0);
   const [showReminderOption, setShowReminderOption] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
+  const statusCheckedRef = useRef(false);
   const router = useRouter();
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
   const currentYear = new Date().getFullYear();
 
   const checkMasterKeyStatus = async () => {
+    if (statusCheckedRef.current) return;
+    
     try {
       const response = await fetch("/api/user/master-key-status");
       if (response.ok) {
         const { hasMasterKey } = await response.json();
         setIsNewUser(!hasMasterKey);
+        statusCheckedRef.current = true;
       }
     } catch (error) {
-      console.error("Error checking master key status:", error);
+      console.error("Master key durumu kontrol edilirken hata:", error);
     }
   };
 
   useEffect(() => {
     setMounted(true);
-    checkMasterKeyStatus();
-  }, []);
+    
+    try {
+      // Önce cookie kontrolü yap
+      const protectionKey = Cookies.get("protection_key");
+      if (protectionKey && JSON.parse(protectionKey)) {
+        // Geçerli bir protection_key varsa admin sayfasına yönlendir
+        router.replace("/admin");
+        return;
+      }
+    } catch (error) {
+      // Cookie parse hatası olursa cookie'yi temizle
+      Cookies.remove("protection_key");
+    }
+    
+    // Cookie yoksa ve daha önce kontrol edilmediyse master key durumunu kontrol et
+    if (!statusCheckedRef.current) {
+      checkMasterKeyStatus();
+    }
+  }, []); // Boş bağımlılık dizisi - sadece bir kez çalışır
 
   if (!mounted) return null;
-  if (Cookies.get("master_key")) return router.push("/admin");
 
   const isDarkMode = resolvedTheme === "dark";
 
@@ -91,19 +110,19 @@ export default function MasterKeySetup() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (masterKeySalt.length !== 6 || !/^\d+$/.test(masterKeySalt)) {
+    if (masterKey.length !== 6 || !/^\d+$/.test(masterKey)) {
       toast({
-        title: "Error",
-        description: "Master key must be 6 digits",
+        title: "Hata",
+        description: "Master key 6 haneli olmalıdır",
         variant: "destructive",
       });
       return;
     }
 
-    if (isNewUser && masterKeySalt !== confirmMasterKey) {
+    if (isNewUser && masterKey !== confirmMasterKey) {
       toast({
-        title: "Error",
-        description: "Master keys do not match",
+        title: "Hata",
+        description: "Master key'ler eşleşmiyor",
         variant: "destructive",
       });
       return;
@@ -111,30 +130,93 @@ export default function MasterKeySetup() {
 
     try {
       if (isNewUser) {
+        // Generate master key data
+        const masterKeyData = await ZeroKnowledgeCrypto.deriveMasterKey(masterKey);
+        
+        // Create auth hash for server verification
+        const authHash = await ZeroKnowledgeCrypto.createAuthHash(masterKeyData.authKey);
+
+        // Save auth data to server
         const response = await fetch("/api/user/master-key", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ masterKeySalt, reminder }),
+          body: JSON.stringify({
+            authSalt: authHash.authSalt,
+            authVerifier: authHash.authVerifier,
+            reminder
+          }),
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok) {
+          // Store encryption key in cookie (encrypted with master key)
+          // CryptoKey nesnesini JWK formatına dönüştür
+          const exportedKey = await crypto.subtle.exportKey(
+            "jwk",
+            masterKeyData.protectionKey
+          );
+
+          // Cookie'yi ayarla ve süresini 7 gün olarak belirle
+          Cookies.set("protection_key", JSON.stringify({
+            key: exportedKey,
+            salt: masterKeyData.masterSalt
+          }), { expires: 7 });
+
+          toast({
+            title: "Başarılı",
+            description: "Master key başarıyla ayarlandı",
+          });
+
+          // Kısa bir gecikme ekleyerek cookie'nin kaydedilmesini bekle
+          setTimeout(() => {
+            router.push("/admin");
+          }, 500);
+        } else {
+          throw new Error(responseData.error || "Master key ayarlanamadı");
+        }
+      } else {
+        // Verify existing master key
+        const response = await fetch("/api/user/verify-master-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ masterKey }),
         });
 
         if (response.ok) {
-          const masterKey = await ClientCrypto.hashMasterPassword(
-            masterKeySalt
+          const { authSalt, authVerifier } = await response.json();
+          
+          const isValid = await ZeroKnowledgeCrypto.verifyMasterKey(
+            masterKey,
+            authSalt,
+            authVerifier
           );
-          Cookies.set("master_key", masterKey);
-          router.push("/admin");
-        }
-      } else {
-        const userMail = session?.user?.email;
-        if (userMail) {
-          const checkMaster = await checkMasterKeySalt(userMail, masterKeySalt);
 
-          if (checkMaster) {
-            const masterKey = await ClientCrypto.hashMasterPassword(
-              masterKeySalt
+          if (isValid) {
+            // Re-derive keys and store protection key
+            const masterKeyData = await ZeroKnowledgeCrypto.deriveMasterKey(masterKey);
+            
+            // CryptoKey nesnesini JWK formatına dönüştür
+            const exportedKey = await crypto.subtle.exportKey(
+              "jwk",
+              masterKeyData.protectionKey
             );
-            Cookies.set("master_key", masterKey);
-            router.push("/admin");
+
+            // Cookie'yi ayarla ve süresini 7 gün olarak belirle
+            Cookies.set("protection_key", JSON.stringify({
+              key: exportedKey,
+              salt: masterKeyData.masterSalt
+            }), { expires: 7 });
+
+            toast({
+              title: "Başarılı",
+              description: "Giriş başarılı",
+            });
+
+            // Kısa bir gecikme ekleyerek cookie'nin kaydedilmesini bekle
+            setTimeout(() => {
+              router.push("/admin");
+            }, 500);
           } else {
             setAttempts(prev => {
               const newAttempts = prev + 1;
@@ -145,17 +227,39 @@ export default function MasterKeySetup() {
             });
             
             toast({
-              title: "Error",
-              description: "Invalid master key",
+              title: "Hata",
+              description: "Geçersiz master key",
               variant: "destructive",
             });
           }
+        } else {
+          const errorData = await response.json();
+          
+          // Migration gerekiyorsa kullanıcıyı migration sayfasına yönlendir
+          if (errorData.needsMigration) {
+            toast({
+              title: "Migration Gerekiyor",
+              description: "Master key formatınızın güncellenmesi gerekiyor. Migration sayfasına yönlendiriliyorsunuz.",
+            });
+            
+            setTimeout(() => {
+              router.push("/migrate");
+            }, 2000);
+            return;
+          }
+          
+          toast({
+            title: "Hata",
+            description: errorData.error || "Doğrulama sırasında bir hata oluştu",
+            variant: "destructive",
+          });
         }
       }
-    } catch {
+    } catch (error) {
+      console.error("Hata:", error);
       toast({
-        title: "Error",
-        description: "Something went wrong",
+        title: "Hata",
+        description: error instanceof Error ? error.message : "Bir şeyler yanlış gitti",
         variant: "destructive",
       });
     }
@@ -165,7 +269,7 @@ export default function MasterKeySetup() {
     if (!isNewUser) {
       setMasterKey(value);
     } else {
-      if (masterKeySalt.length < 6) {
+      if (masterKey.length < 6) {
         setMasterKey(value);
       } else if (confirmMasterKey.length < 6) {
         setConfirmMasterKey(value);
@@ -219,7 +323,7 @@ export default function MasterKeySetup() {
                   type="password"
                   maxLength={6}
                   placeholder="******"
-                  value={masterKeySalt}
+                  value={masterKey}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, "");
                     setMasterKey(value);
@@ -252,7 +356,7 @@ export default function MasterKeySetup() {
                 {!isNewUser && (
                   <VirtualKeyboard
                     onKeyPress={handleKeyPress}
-                    currentValue={masterKeySalt}
+                    currentValue={masterKey}
                     maxLength={6}
                   />
                 )}
