@@ -185,14 +185,25 @@ export function PasswordTable({
                 <TableCell>
                   {password.url && (
                     <a
-                      href={password.url}
-                      target="_blank"
+                      href={(() => {
+                        let url = password.url.trim();
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                          url = `https://${url}`;
+                        }
+                        return url;
+                      })()}
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:underline"
+                      target="_blank"
                     >
                       {(() => {
                         try {
-                          return new URL(password.url).hostname;
+                          const url = password.url.trim();
+                          if (url.startsWith('http://') || url.startsWith('https://')) {
+                            return new URL(url).hostname;
+                          } else {
+                            return new URL(`https://${url}`).hostname;
+                          }
                         } catch (e) {
                           return password.url;
                         }
