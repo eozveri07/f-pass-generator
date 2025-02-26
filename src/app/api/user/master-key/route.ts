@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
 import dbConnect from '@/lib/mongoose'
 import { User } from '@/models/user'
-import bc from "bcryptjs"
 
-interface CustomError {
-  message: string;
+interface MasterKeyRequest {
+  authSalt: string;
+  authVerifier: string;
+  reminder?: string;
 }
 
 export async function POST(request: Request) {  
@@ -13,51 +14,94 @@ export async function POST(request: Request) {
     await dbConnect()
     const session = await auth()
     
-    console.log('Session data:', session?.user)
-    
     if (!session?.user?.email) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
     }
 
-    const { masterKeySalt, reminder } = await request.json()  
+    const { authSalt, authVerifier, reminder } = await request.json() as MasterKeyRequest
 
-    if (!masterKeySalt || masterKeySalt.length !== 6 || !/^\d+$/.test(masterKeySalt)) {
-      return new NextResponse("Invalid master key", { status: 400 })
+    if (!authSalt || !authVerifier) {
+      return NextResponse.json({ error: 'Geçersiz doğrulama verileri' }, { status: 400 })
     }
 
     let user = await User.findOne({ email: session.user.email })
-    const masterKey = await bc.hash(masterKeySalt, 10) 
 
     if (user) {
-      user.masterKeyHash = masterKey
+      // Update existing user
+      user.authSalt = authSalt
+      user.authVerifier = authVerifier
       user.masterKeySetAt = new Date()
       user.masterKeyReminder = reminder
       await user.save()
-      console.log('Updated user:', user)
     } else {
+      // Create new user
       user = await User.create({
         email: session.user.email,
         name: session.user.name,
         image: session.user.image,
-        masterKeyHash: masterKey,
+        authSalt,
+        authVerifier,
         masterKeySetAt: new Date(),
         masterKeyReminder: reminder,
-        twoFactorEnabled: false,
+        twoFactorEnabled: false
       })
-      console.log('Created new user:', user)
     }
 
-    return new NextResponse(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
+    return NextResponse.json({ 
+      success: true,
+      message: "Master key doğrulama verileri başarıyla kaydedildi"
     })
+
   } catch (error) {
-    console.error('Error setting master key:', error)
-    return new NextResponse(JSON.stringify({ 
-      error: (error as CustomError).message 
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    return NextResponse.json({ 
+      success: false,
+      error: error instanceof Error ? error.message : "Bilinmeyen hata"
+    }, { 
+      status: 500 
+    })
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    await dbConnect()
+    const session = await auth()
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 })
+    }
+
+    const { authSalt, authVerifier, reminder } = await request.json() as MasterKeyRequest
+
+    if (!authSalt || !authVerifier) {
+      return NextResponse.json({ error: 'Geçersiz doğrulama verileri' }, { status: 400 })
+    }
+
+    const user = await User.findOne({ email: session.user.email })
+    if (!user) {
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı' }, { status: 404 })
+    }
+
+    // Update master key authentication data
+    user.authSalt = authSalt
+    user.authVerifier = authVerifier
+    user.masterKeySetAt = new Date()
+    if (reminder !== undefined) {
+      user.masterKeyReminder = reminder
+    }
+    await user.save()
+
+    return NextResponse.json({ 
+      success: true,
+      message: "Master key doğrulama verileri başarıyla güncellendi"
+    })
+
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false,
+      error: error instanceof Error ? error.message : "Bilinmeyen hata"
+    }, { 
+      status: 500 
     })
   }
 }
