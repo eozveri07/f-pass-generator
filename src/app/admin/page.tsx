@@ -7,7 +7,7 @@ import Cookie from "js-cookie";
 export default function PasswordsPage() {
   const router = useRouter();
 
-  if (!Cookie.get("master_key")) return router.push("/2fa");
+  if (!Cookie.get("protection_key")) return router.push("/2fa");
 
   return (
     <main className="flex-1 container mx-auto py-8">

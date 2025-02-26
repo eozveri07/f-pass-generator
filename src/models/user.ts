@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema({
   },
   image: String,
   emailVerified: Date,
-  masterKeyHash: String,  
+  authSalt: String,        
+  authVerifier: String,   
   masterKeySetAt: Date,   
-  masterKeyReminder: String,
+  masterKeyReminder: String, 
   twoFactorEnabled: { type: Boolean, default: false },
   twoFactorSecret: String,
   twoFactorUnlockedAt: { type: Date, default: null }

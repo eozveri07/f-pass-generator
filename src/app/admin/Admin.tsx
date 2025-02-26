@@ -27,7 +27,7 @@ export default function AdminLayout({
   const router = useRouter();
   const { data: session } = useSession();
 
-  if (!Cookie.get("master_key")) {
+  if (!Cookie.get("protection_key")) {
     router.push("/2fa");
     return <></>;
   }

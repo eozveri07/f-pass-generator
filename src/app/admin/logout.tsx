@@ -9,7 +9,7 @@ export default function UserDropdownButtons() {
   const router = useRouter();
   
   const handleClick = async () => {
-    Cookies.remove("master_key");
+    Cookies.remove("protection_key");
     await handleLogout();
   };
 
