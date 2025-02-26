@@ -101,8 +101,26 @@ export function PasswordForm({
       const formData = new FormData(e.currentTarget);
       const password = formData.get("password") as string;
       
-      // Yeni yaklaşım: useProtectionKey hook'unu kullan
-      const { encryptedData, iv, salt } = await encrypt(password);
+      // Temel veri alanlarını hazırla
+      const passwordData: Partial<Password> = {
+        title: formData.get("title") as string,
+        username: formData.get("username") as string,
+        url: formData.get("url") as string,
+        notes: formData.get("notes") as string,
+        priorityLevel: formData.get("priorityLevel") as
+          | "low"
+          | "medium"
+          | "high",
+      };
+
+      // Şifre alanı doldurulmuşsa şifreyi güncelle
+      if (password.trim() !== "") {
+        // Yeni yaklaşım: useProtectionKey hook'unu kullan
+        const { encryptedData, iv, salt } = await encrypt(password);
+        passwordData.encryptedData = encryptedData;
+        passwordData.iv = iv;
+        passwordData.salt = salt;
+      }
 
       const foundGroup =
         selectedGroupId === "none"
@@ -126,21 +144,8 @@ export function PasswordForm({
           ? []
           : tags.filter((tag) => tag._id === selectedTagId);
 
-      const passwordData: Partial<Password> = {
-        title: formData.get("title") as string,
-        username: formData.get("username") as string,
-        encryptedData,
-        iv,
-        salt,
-        url: formData.get("url") as string,
-        notes: formData.get("notes") as string,
-        priorityLevel: formData.get("priorityLevel") as
-          | "low"
-          | "medium"
-          | "high",
-        groupId: selectedGroup,
-        tags: selectedTag,
-      };
+      passwordData.groupId = selectedGroup;
+      passwordData.tags = selectedTag;
 
       await onSubmit(passwordData);
     } catch (error) {
@@ -194,12 +199,13 @@ export function PasswordForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password *</Label>
+        <Label htmlFor="password">Password {initialData?._id ? "(Boş bırakırsanız değişmez)" : "*"}</Label>
         <Input
           id="password"
           name="password"
           type="password"
-          required={!initialData}
+          placeholder={initialData?._id ? "••••••••" : "Şifre girin"}
+          required={!initialData?._id}
         />
       </div>
       <div className="space-y-2">
