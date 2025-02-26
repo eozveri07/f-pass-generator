@@ -100,15 +100,9 @@ export default function UpdateMasterKey() {
         throw new Error("Master key güncellenirken bir hata oluştu");
       }
 
-      // 5. Update protection key in cookie
-      // CryptoKey nesnesini JWK formatına dönüştür
-      const exportedKey = await crypto.subtle.exportKey(
-        "jwk",
-        newMasterKeyData.protectionKey
-      );
-
+      // 5. Update protection key in cookie - yeni yaklaşım
       Cookies.set("protection_key", JSON.stringify({
-        key: exportedKey,
+        masterKey: newMasterKey,
         salt: newMasterKeyData.masterSalt
       }));
 

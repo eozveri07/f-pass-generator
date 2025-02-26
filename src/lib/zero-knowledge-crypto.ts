@@ -12,6 +12,10 @@ export class ZeroKnowledgeCrypto {
   private static readonly SALT_LENGTH = 32;
   private static readonly KEY_LENGTH = 256;
   private static readonly AUTH_ITERATIONS = 1;
+  
+  // Geçici anahtar saklama için WeakMap kullanımı (sadece bellek içinde, referans tabanlı)
+  private static readonly keyStorage = new WeakMap<object, CryptoKey>();
+  private static readonly keyIdentifier = {};
 
   static async deriveMasterKey(password: string): Promise<MasterKeyData> {
     try {
@@ -51,9 +55,12 @@ export class ZeroKnowledgeCrypto {
         },
         keyMaterial,
         { name: "AES-GCM", length: this.KEY_LENGTH },
-        false,
+        false, // extractable: false - anahtarı dışa aktarılamaz yapıyoruz
         ["encrypt", "decrypt"]
       );
+      
+      // Anahtarı bellek içinde saklıyoruz
+      this.storeProtectionKey(protectionKey);
 
       // Derive auth key for server verification
       const authKey = await crypto.subtle.deriveKey(
@@ -77,6 +84,54 @@ export class ZeroKnowledgeCrypto {
       };
     } catch (error) {
       throw this.handleError("Failed to derive master key", error);
+    }
+  }
+  
+  // Anahtarı bellek içinde saklamak için yardımcı metod
+  private static storeProtectionKey(key: CryptoKey): void {
+    this.keyStorage.set(this.keyIdentifier, key);
+  }
+  
+  // Anahtarı bellek içinden almak için yardımcı metod
+  static getStoredProtectionKey(): CryptoKey | undefined {
+    return this.keyStorage.get(this.keyIdentifier);
+  }
+  
+  // Oturum doğrulama ve anahtar yenileme
+  static async validateSession(masterKey: string, masterSalt: string): Promise<boolean> {
+    try {
+      const enc = new TextEncoder();
+      
+      // Import password for key derivation
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(masterKey),
+        "PBKDF2",
+        false,
+        ["deriveBits", "deriveKey"]
+      );
+      
+      // Derive protection key for data encryption
+      const protectionKey = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: new TextEncoder().encode("enc"),
+          iterations: 1,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: this.KEY_LENGTH },
+        false,
+        ["encrypt", "decrypt"]
+      );
+      
+      // Anahtarı bellek içinde saklıyoruz
+      this.storeProtectionKey(protectionKey);
+      
+      return true;
+    } catch (error) {
+      console.error("Session validation failed:", error);
+      return false;
     }
   }
 

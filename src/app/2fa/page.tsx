@@ -150,16 +150,9 @@ export default function MasterKeySetup() {
         const responseData = await response.json();
 
         if (response.ok) {
-          // Store encryption key in cookie (encrypted with master key)
-          // CryptoKey nesnesini JWK formatına dönüştür
-          const exportedKey = await crypto.subtle.exportKey(
-            "jwk",
-            masterKeyData.protectionKey
-          );
-
-          // Cookie'yi ayarla ve süresini 7 gün olarak belirle
+          // Artık anahtarı dışa aktarmak yerine, sadece master key ve salt değerlerini saklıyoruz
           Cookies.set("protection_key", JSON.stringify({
-            key: exportedKey,
+            masterKey: masterKey,
             salt: masterKeyData.masterSalt
           }), { expires: 7 });
 
@@ -196,15 +189,9 @@ export default function MasterKeySetup() {
             // Re-derive keys and store protection key
             const masterKeyData = await ZeroKnowledgeCrypto.deriveMasterKey(masterKey);
             
-            // CryptoKey nesnesini JWK formatına dönüştür
-            const exportedKey = await crypto.subtle.exportKey(
-              "jwk",
-              masterKeyData.protectionKey
-            );
-
-            // Cookie'yi ayarla ve süresini 7 gün olarak belirle
+            // Artık anahtarı dışa aktarmak yerine, sadece master key ve salt değerlerini saklıyoruz
             Cookies.set("protection_key", JSON.stringify({
-              key: exportedKey,
+              masterKey: masterKey,
               salt: masterKeyData.masterSalt
             }), { expires: 7 });
 
